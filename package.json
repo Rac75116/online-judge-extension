@@ -14,8 +14,16 @@
   "contributes": {
     "commands": [
       {
-        "command": "online-judge-extension.helloWorld",
-        "title": "Hello World"
+        "command": "online-judge-extension.setup",
+        "title": "Oje : Install online-judge-tools"
+      },
+      {
+        "command": "online-judge-extension.newdir",
+        "title": "Oje : Create New Contest Directory"
+      },
+      {
+        "command": "online-judge-extension.login",
+        "title": "Oje : Login"
       }
     ]
   },
