@@ -46,13 +46,6 @@ async function check_py_oj_version() {
 	return py_ok && oj_ok;
 }
 
-function oj_login(site : string) {
-	let terminal = vscode.window.activeTerminal;
-	if(terminal === undefined) terminal = vscode.window.createTerminal();
-	terminal.show(true);
-	terminal.sendText('python "' + path.join(path.dirname(__dirname), 'src/login.py') + `" ${site}`);
-}
-
 export function activate(context: vscode.ExtensionContext) {
 	console.log('"Online Judge Extension" is now active!');
 	let disposable1 = vscode.commands.registerCommand('online-judge-extension.setup', async () => {
@@ -83,7 +76,10 @@ export function activate(context: vscode.ExtensionContext) {
 		const sites = ['Atcoder', 'Codeforces', 'yukicoder', 'HackerRank', 'Toph'];
 		const site = await vscode.window.showQuickPick(sites);
 		if(site === undefined) return;
-		oj_login(site);
+		let terminal = vscode.window.activeTerminal;
+		if(terminal === undefined) terminal = vscode.window.createTerminal();
+		terminal.show(true);
+		terminal.sendText('python "' + path.join(path.dirname(__dirname), 'src/login.py') + `" ${site}`);
 	});
 	context.subscriptions.push(disposable3);
 }
