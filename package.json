@@ -15,15 +15,40 @@
     "commands": [
       {
         "command": "online-judge-extension.setup",
-        "title": "Oje : Install online-judge-tools"
+        "title": "Oje: Install online-judge-tools"
       },
       {
         "command": "online-judge-extension.newdir",
-        "title": "Oje : Create New Contest Directory"
+        "title": "Oje: Create New Contest Directory"
       },
       {
         "command": "online-judge-extension.login",
-        "title": "Oje : Login"
+        "title": "Oje: Login"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "online-judge-extension.newdir",
+          "when": "editorHasSelection"
+        }
+      ],
+      "explorer/context":[
+        {
+          "command": "online-judge-extension.newdir",
+          "when": "explorerResourceIsFolder"
+        }
+      ]
+    },
+    "configuration": [
+      {
+        "title": "online-judge-extension",
+        "properties": {
+          "atcoder.templateFile": {
+            "type": "string",
+            "description": "Specify the path of the template program to be created with the \"newdir\" command."
+          }
+        }
       }
     ]
   },
