@@ -1,80 +1,80 @@
 {
-  "name": "online-judge-extension",
-  "displayName": "Online Judge Extension",
-  "description": "VSCode extension for online-judge-tools",
-  "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.87.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "online-judge-extension.setup",
-        "title": "Oje: Install online-judge-tools"
-      },
-      {
-        "command": "online-judge-extension.newdir",
-        "title": "Oje: Create New Contest Directory"
-      },
-      {
-        "command": "online-judge-extension.login",
-        "title": "Oje: Login"
-      }
-    ],
-    "menus": {
-      "commandPalette": [
-        {
-          "command": "online-judge-extension.newdir",
-          "when": "editorHasSelection"
-        }
-      ],
-      "explorer/context":[
-        {
-          "command": "online-judge-extension.newdir",
-          "when": "explorerResourceIsFolder"
-        }
-      ]
+    "name": "online-judge-extension",
+    "displayName": "Online Judge Extension",
+    "description": "VSCode extension for online-judge-tools",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.87.0"
     },
-    "configuration": [
-      {
-        "title": "online-judge-extension",
-        "properties": {
-          "atcoder.templateFile": {
-            "type": "string",
-            "description": "Specify the path of the template program to be created with the \"newdir\" command."
-          }
-        }
-      }
-    ]
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "vscode-test"
-  },
-  "devDependencies": {
-    "@types/vscode": "^1.87.0",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "18.x",
-    "@typescript-eslint/eslint-plugin": "^7.0.2",
-    "@typescript-eslint/parser": "^7.0.2",
-    "eslint": "^8.56.0",
-    "typescript": "^5.3.3",
-    "ts-loader": "^9.5.1",
-    "webpack": "^5.90.3",
-    "webpack-cli": "^5.1.4",
-    "@vscode/test-cli": "^0.0.6",
-    "@vscode/test-electron": "^2.3.9"
-  }
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "online-judge-extension.setup",
+                "title": "Oje: Install online-judge-tools"
+            },
+            {
+                "command": "online-judge-extension.newdir",
+                "title": "Oje: Create New Contest Directory"
+            },
+            {
+                "command": "online-judge-extension.login",
+                "title": "Oje: Login"
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "online-judge-extension.newdir",
+                    "when": "editorHasSelection"
+                }
+            ],
+            "explorer/context": [
+                {
+                    "command": "online-judge-extension.newdir",
+                    "when": "explorerResourceIsFolder"
+                }
+            ]
+        },
+        "configuration": [
+            {
+                "title": "online-judge-extension",
+                "properties": {
+                    "oje.templateFile": {
+                        "type": "string",
+                        "description": "Specify the path of the template program to be created with the \"newdir\" command."
+                    }
+                }
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "webpack",
+        "watch": "webpack --watch",
+        "package": "webpack --mode production --devtool hidden-source-map",
+        "compile-tests": "tsc -p . --outDir out",
+        "watch-tests": "tsc -p . -w --outDir out",
+        "pretest": "npm run compile-tests && npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "vscode-test"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.87.0",
+        "@types/mocha": "^10.0.6",
+        "@types/node": "18.x",
+        "@typescript-eslint/eslint-plugin": "^7.0.2",
+        "@typescript-eslint/parser": "^7.0.2",
+        "eslint": "^8.56.0",
+        "typescript": "^5.3.3",
+        "ts-loader": "^9.5.1",
+        "webpack": "^5.90.3",
+        "webpack-cli": "^5.1.4",
+        "@vscode/test-cli": "^0.0.6",
+        "@vscode/test-electron": "^2.3.9"
+    }
 }
