@@ -218,6 +218,8 @@ function get_problem_data(url: string, callback: any) {
             vscode.window.showErrorMessage("Something went wrong.");
             return;
         }
+        const problem = JSON.parse(stdout);
+        callback(problem);
     });
 }
 
