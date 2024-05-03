@@ -129,7 +129,7 @@ function get_contest_data(service: number, contest_id: string, callback: any) {
     let contest_url = service_url[service];
     if (service === services.Atcoder || service === services.yukicoder) contest_url += `contests/${contest_id}/`;
     else if (service === services.Atcoder_Problems) contest_url += `#/contest/show/${contest_id}/`;
-    else if (service === services.CodeChef) contest_url += contest_id;
+    else if (service === services.CodeChef) contest_url += contest_id + "/";
     else if (service === services.Codeforces) contest_url += `contest/${contest_id}/`;
     child_process.exec(`oj-api --wait=0.0 get-contest ${contest_url}`, async (error, stdout, stderr) => {
         if (stdout !== "") console.log(stdout);
@@ -206,6 +206,17 @@ function get_contest_data(service: number, contest_id: string, callback: any) {
             callback(contest, make_file_folder_name(name), "guess");
         } else {
             vscode.window.showErrorMessage("Could not retrieve contest information.");
+        }
+    });
+}
+
+function get_problem_data(url: string, callback: any) {
+    child_process.exec(`oj-api --wait=0.0 get-problem ${url}`, (error, stdout, stderr) => {
+        if (stdout !== "") console.log(stdout);
+        if (stderr !== "") console.error(stderr);
+        if (error) {
+            vscode.window.showErrorMessage("Something went wrong.");
+            return;
         }
     });
 }
@@ -337,6 +348,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     let update = vscode.commands.registerCommand("online-judge-extension.update", async (target_directory: vscode.Uri) => {
         if (!(await check_oj_api_version())) return;
+
         if (await file_exists(vscode.Uri.joinPath(target_directory, "contest.oje.json"))) {
             const config = vscode.workspace.getConfiguration("oje");
             const template_path = config.get<string>("templateFile");
@@ -357,6 +369,40 @@ export function activate(context: vscode.ExtensionContext) {
                 }
                 file_or_command = path.basename(template_path);
             }
+
+            const url: string = JSON.parse((await vscode.workspace.fs.readFile(vscode.Uri.joinPath(target_directory, "contest.oje.json"))).toString()).result.url;
+            const service: number = Number(Object.keys(service_url).find((value) => url.startsWith(service_url[Number(value)])));
+            const contest_id = url.split("/").at(-1);
+            if (contest_id === undefined) {
+                vscode.window.showErrorMessage("Faild to extract contest id from url.");
+                return;
+            }
+
+            get_contest_data(service, contest_id, async (contest: any, dirname: string, stat: string) => {
+                if (path.basename(target_directory.fsPath) !== dirname) {
+                    const new_uri = vscode.Uri.joinPath(target_directory, "../" + dirname);
+                    await vscode.workspace.fs.rename(target_directory, new_uri);
+                    target_directory = new_uri;
+                }
+                if (service === services.Atcoder) {
+                    contest.result.problems = contest.result.problems.filter((problem: any) => !("alphabet" in problem.context && problem.context.alphabet === "A-Final"));
+                }
+                vscode.workspace.fs.writeFile(vscode.Uri.joinPath(target_directory, "contest.oje.json"), new TextEncoder().encode(JSON.stringify(contest, null, 4)));
+                contest.result.problems.forEach(async (problem: any, index: number) => {
+                    problem.status = stat;
+                    const dir = vscode.Uri.joinPath(target_directory, "alphabet" in problem.context ? problem.context.alphabet : String(index) + " " + problem.name);
+                    if ((await file_exists(dir)) !== vscode.FileType.Directory) {
+                        vscode.workspace.fs.createDirectory(dir);
+                        const file = vscode.Uri.joinPath(dir, file_or_command);
+                        if (template_uri === undefined) {
+                            vscode.workspace.fs.writeFile(file, new Uint8Array());
+                        } else {
+                            vscode.workspace.fs.copy(template_uri, file);
+                        }
+                    }
+                    vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir, "problem.oje.json"), new TextEncoder().encode(JSON.stringify(problem, null, 4)));
+                });
+            });
         } else if (await file_exists(vscode.Uri.joinPath(target_directory, "problem.oje.json"))) {
             // TODO
         } else {
