@@ -81,6 +81,29 @@ function make_file_folder_name(old: string) {
     return old.replaceAll("\\", "_").replaceAll("/", "_").replaceAll(":", "_").replaceAll("*", "_").replaceAll("?", "_").replaceAll('"', "_").replaceAll("<", "_").replaceAll(">", "_").replaceAll("|", "_").replaceAll(";", "_").replaceAll("%", "_");
 }
 
+async function get_template(): Promise<[vscode.Uri | undefined, string] | undefined> {
+    const config = vscode.workspace.getConfiguration("oje");
+    const template_path = config.get<string>("templateFile");
+    let template_uri: vscode.Uri | undefined = undefined;
+    let file_or_command = "Main";
+    if (template_path !== undefined && template_path !== "") {
+        template_uri = vscode.Uri.file(template_path);
+        const ft = await file_exists(template_uri);
+        if (ft !== vscode.FileType.File) {
+            if (ft === vscode.FileType.Directory) {
+                vscode.window.showErrorMessage('"Template File" path is a directory, not a file.');
+            } else if (ft === vscode.FileType.SymbolicLink) {
+                vscode.window.showErrorMessage("Symbolic links are not available.");
+            } else {
+                vscode.window.showErrorMessage('The file pointed to by "Template File" path does not exist.');
+            }
+            return undefined;
+        }
+        file_or_command = path.basename(template_path);
+    }
+    return [template_uri, file_or_command];
+}
+
 function login_service(service: number, use_selenium: boolean | any) {
     const url = service_url[service];
     child_process.exec(`oj login --check ${url}`, async (error, stdout, stderr) => {
@@ -204,6 +227,47 @@ function get_contest_data(service: number, contest_id: string, callback: any) {
                 })
             );
             callback(contest, make_file_folder_name(name), "guess");
+        } else if (service === services.Codeforces) {
+            const cnt = await vscode.window.showInputBox({
+                ignoreFocusOut: true,
+                placeHolder: "ex) 7",
+                prompt: "Enter the number of problems. (1-26)",
+            });
+            if (cnt === undefined || cnt === "") return;
+            const n = Number(cnt);
+            if (!Number.isInteger(n) || n < 1 || n > 26) {
+                vscode.window.showErrorMessage("Incorrect input. Enter an integer between 1 and 26.");
+                return;
+            }
+            contest.status = "guess";
+            contest.result = {
+                url: `https://codeforces.com/contest/${contest_id}`,
+                name: null,
+                problems: [],
+            };
+            for (let i = 0; i < n; ++i) {
+                const id = String.fromCharCode("A".charCodeAt(0) + i);
+                contest.result.problems.push({
+                    url: `https://codeforces.com/contest/${contest_id}/problem/${id}`,
+                    name: null,
+                    context: {
+                        contest: {
+                            url: `https://atcoder.jp/contests/${contest_id}`,
+                            name: null,
+                        },
+                        alphabet: id,
+                    },
+                });
+            }
+            callback(contest, make_file_folder_name("Codeforces_" + contest_id), "guess");
+        } else if (service === services.CodeChef) {
+            contest.status = "guess";
+            contest.result = {
+                url: `https://www.codechef.com/${contest_id}`,
+                name: null,
+                problems: [],
+            };
+            callback(contest, make_file_folder_name(contest_id), "guess");
         } else {
             vscode.window.showErrorMessage("Could not retrieve contest information.");
         }
@@ -211,6 +275,9 @@ function get_contest_data(service: number, contest_id: string, callback: any) {
 }
 
 function get_problem_data(url: string, callback: any) {
+    if (url.includes("judge.yosupo.jp")) {
+        vscode.window.showInformationMessage("Please wait a moment...");
+    }
     child_process.exec(`oj-api --wait=0.0 get-problem ${url}`, (error, stdout, stderr) => {
         if (stdout !== "") console.log(stdout);
         if (stderr !== "") console.error(stderr);
@@ -296,25 +363,9 @@ export function activate(context: vscode.ExtensionContext) {
     let createdir = vscode.commands.registerCommand("online-judge-extension.createdir", async (target_directory: vscode.Uri) => {
         if (!(await check_oj_api_version())) return;
 
-        const config = vscode.workspace.getConfiguration("oje");
-        const template_path = config.get<string>("templateFile");
-        let template_uri: vscode.Uri | undefined = undefined;
-        let file_or_command = "Main";
-        if (template_path !== undefined && template_path !== "") {
-            template_uri = vscode.Uri.file(template_path);
-            const ft = await file_exists(template_uri);
-            if (ft !== vscode.FileType.File) {
-                if (ft === vscode.FileType.Directory) {
-                    vscode.window.showErrorMessage('"Template File" path is a directory, not a file.');
-                } else if (ft === vscode.FileType.SymbolicLink) {
-                    vscode.window.showErrorMessage("Symbolic links are not available.");
-                } else {
-                    vscode.window.showErrorMessage('The file pointed to by "Template File" path does not exist.');
-                }
-                return;
-            }
-            file_or_command = path.basename(template_path);
-        }
+        const template = await get_template();
+        if (template === undefined) return;
+        const [template_uri, file_or_command] = template;
 
         const service = await select_service([services.Atcoder, services.Atcoder_Problems, services.CodeChef, services.Codeforces, services.yukicoder]);
         if (service === undefined) return;
@@ -332,10 +383,10 @@ export function activate(context: vscode.ExtensionContext) {
             const dir = vscode.Uri.joinPath(target_directory, dirname);
             vscode.workspace.fs.createDirectory(dir);
             vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir, "contest.oje.json"), new TextEncoder().encode(JSON.stringify(contest, null, 4)));
-            contest.result.problems.forEach((problem: any, index: number) => {
+            contest.result.problems.forEach(async (problem: any, index: number) => {
                 problem.status = stat;
                 const dir2 = vscode.Uri.joinPath(dir, "alphabet" in problem.context ? problem.context.alphabet : String(index) + " " + problem.name);
-                vscode.workspace.fs.createDirectory(dir2);
+                await vscode.workspace.fs.createDirectory(dir2);
                 vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir2, "problem.oje.json"), new TextEncoder().encode(JSON.stringify(problem, null, 4)));
                 const file = vscode.Uri.joinPath(dir2, file_or_command);
                 if (template_uri === undefined) {
@@ -348,29 +399,56 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(createdir);
 
+    let addproblem = vscode.commands.registerCommand("online-judge-extension.addproblem", async (target_directory: vscode.Uri) => {
+        if (!(await check_oj_api_version())) return;
+
+        const template = await get_template();
+        if (template === undefined) return;
+        const [template_uri, file_or_command] = template;
+        if (await file_exists(vscode.Uri.joinPath(target_directory, "contest.oje.json"))) {
+            vscode.window.showErrorMessage("Something went wrong.");
+            return;
+        }
+
+        const problem_url = await vscode.window.showInputBox({
+            ignoreFocusOut: true,
+            placeHolder: "ex) https://codeforces.com/contest/1606/problem/A",
+            prompt: "Enter the problem url.",
+        });
+        if (problem_url === undefined || problem_url === "") return;
+        get_problem_data(problem_url, async (problem: any) => {
+            let name = "";
+            if ("name" in problem.result) name = problem.result.name;
+            else {
+                if (problem.result.url.startsWith("http://judge.u-aizu.ac.jp")) name = problem.result.url.split("=").at(-1);
+                else if (problem.result.url.startsWith("http://golf.shinh.org")) name = problem.result.url.split("?").at(-1).replaceAll("+", " ");
+                else if (problem.result.url.startsWith("https://csacademy.com")) name = problem.result.url.split("/").at(-2);
+                else if (problem.result.url.startsWith("https://www.facebook.com")) {
+                    const v = problem.result.url.split("/");
+                    name = v.at(-4) + "-" + v.at(-3) + "-" + v.at(-1);
+                } else if (problem.result.url.startsWith("http://poj.org/")) name = problem.result.url.split("?").at(-1);
+                else name = problem.result.url.split("/").at(-1);
+            }
+            const dir = vscode.Uri.joinPath(target_directory, make_file_folder_name(name));
+            await vscode.workspace.fs.createDirectory(dir);
+            vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir, "problem.oje.json"), new TextEncoder().encode(JSON.stringify(problem, null, 4)));
+            const file = vscode.Uri.joinPath(dir, file_or_command);
+            if (template_uri === undefined) {
+                vscode.workspace.fs.writeFile(file, new Uint8Array());
+            } else {
+                vscode.workspace.fs.copy(template_uri, file);
+            }
+        });
+    });
+    context.subscriptions.push(addproblem);
+
     let update = vscode.commands.registerCommand("online-judge-extension.update", async (target_directory: vscode.Uri) => {
         if (!(await check_oj_api_version())) return;
 
         if (await file_exists(vscode.Uri.joinPath(target_directory, "contest.oje.json"))) {
-            const config = vscode.workspace.getConfiguration("oje");
-            const template_path = config.get<string>("templateFile");
-            let template_uri: vscode.Uri | undefined = undefined;
-            let file_or_command = "Main";
-            if (template_path !== undefined && template_path !== "") {
-                template_uri = vscode.Uri.file(template_path);
-                const ft = await file_exists(template_uri);
-                if (ft !== vscode.FileType.File) {
-                    if (ft === vscode.FileType.Directory) {
-                        vscode.window.showErrorMessage('"Template File" path is a directory, not a file.');
-                    } else if (ft === vscode.FileType.SymbolicLink) {
-                        vscode.window.showErrorMessage("Symbolic links are not available.");
-                    } else {
-                        vscode.window.showErrorMessage('The file pointed to by "Template File" path does not exist.');
-                    }
-                    return;
-                }
-                file_or_command = path.basename(template_path);
-            }
+            const template = await get_template();
+            if (template === undefined) return;
+            const [template_uri, file_or_command] = template;
 
             const url: string = JSON.parse((await vscode.workspace.fs.readFile(vscode.Uri.joinPath(target_directory, "contest.oje.json"))).toString()).result.url;
             const service: number = Number(Object.keys(service_url).find((value) => url.startsWith(service_url[Number(value)])));
@@ -394,7 +472,7 @@ export function activate(context: vscode.ExtensionContext) {
                     problem.status = stat;
                     const dir = vscode.Uri.joinPath(target_directory, "alphabet" in problem.context ? problem.context.alphabet : String(index) + " " + problem.name);
                     if ((await file_exists(dir)) !== vscode.FileType.Directory) {
-                        vscode.workspace.fs.createDirectory(dir);
+                        await vscode.workspace.fs.createDirectory(dir);
                         const file = vscode.Uri.joinPath(dir, file_or_command);
                         if (template_uri === undefined) {
                             vscode.workspace.fs.writeFile(file, new Uint8Array());

@@ -23,11 +23,15 @@
             },
             {
                 "command": "online-judge-extension.login",
-                "title": "Oje: Log in to Service"
+                "title": "Oje: Log in to the Service"
             },
             {
                 "command": "online-judge-extension.update",
                 "title": "Oje: Update Information"
+            },
+            {
+                "command": "online-judge-extension.addproblem",
+                "title": "Oje: Add Problem"
             }
         ],
         "menus": {
@@ -39,6 +43,10 @@
                 {
                     "command": "online-judge-extension.update",
                     "when": "editorHasSelection"
+                },
+                {
+                    "command": "online-judge-extension.addproblem",
+                    "when": "editorHasSelection"
                 }
             ],
             "explorer/context": [
@@ -48,6 +56,10 @@
                 },
                 {
                     "command": "online-judge-extension.update",
+                    "when": "explorerResourceIsFolder"
+                },
+                {
+                    "command": "online-judge-extension.addproblem",
                     "when": "explorerResourceIsFolder"
                 }
             ]
