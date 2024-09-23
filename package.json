@@ -32,6 +32,11 @@
             {
                 "command": "online-judge-extension.addproblem",
                 "title": "Oje: Add Problem"
+            },
+            {
+                "command": "online-judge-extension.bundle",
+                "title": "Oje: Bundle C/C++ Headers",
+                "icon": "$(folder-library)"
             }
         ],
         "menus": {
@@ -62,6 +67,13 @@
                     "command": "online-judge-extension.addproblem",
                     "when": "explorerResourceIsFolder"
                 }
+            ],
+            "editor/title": [
+                {
+                    "command": "online-judge-extension.bundle",
+                    "when": "editorLangId == cpp || editorLangId == c",
+                    "group": "navigation"
+                }
             ]
         },
         "configuration": [
@@ -70,7 +82,7 @@
                 "properties": {
                     "oje.templateFile": {
                         "type": "string",
-                        "description": "Specify the path of the template program to be created with the \"createdir\" command."
+                        "description": "Specify the path of the template program to be created with \"createdir\" command."
                     },
                     "oje.guessC++Latest": {
                         "type": "boolean",
@@ -95,7 +107,7 @@
                             "Auto",
                             "All"
                         ],
-                        "default": "Auto",
+                        "default": "Python3",
                         "description": "Controls which Python version to use during submission."
                     },
                     "oje.guessPythonInterpreter": {
@@ -105,8 +117,13 @@
                             "PyPy",
                             "All"
                         ],
-                        "default": "CPython",
+                        "default": "PyPy",
                         "description": "Controls which Python Interpreter to use during submission."
+                    },
+                    "oje.includePath": {
+                        "type": "array",
+                        "description": "Specify include paths in \"bundle\" or \"submit\" command.",
+                        "default": []
                     },
                     "oje.openBrowser": {
                         "type": "boolean",
@@ -129,17 +146,21 @@
         "test": "vscode-test"
     },
     "devDependencies": {
-        "@types/vscode": "^1.87.0",
+        "@types/copy-paste": "^1.1.33",
         "@types/mocha": "^10.0.6",
         "@types/node": "18.x",
+        "@types/vscode": "^1.87.0",
         "@typescript-eslint/eslint-plugin": "^7.0.2",
         "@typescript-eslint/parser": "^7.0.2",
-        "eslint": "^8.56.0",
-        "typescript": "^5.3.3",
-        "ts-loader": "^9.5.1",
-        "webpack": "^5.90.3",
-        "webpack-cli": "^5.1.4",
         "@vscode/test-cli": "^0.0.6",
-        "@vscode/test-electron": "^2.3.9"
+        "@vscode/test-electron": "^2.3.9",
+        "eslint": "^8.56.0",
+        "ts-loader": "^9.5.1",
+        "typescript": "^5.3.3",
+        "webpack": "^5.90.3",
+        "webpack-cli": "^5.1.4"
+    },
+    "dependencies": {
+        "copy-paste": "^1.5.3"
     }
 }

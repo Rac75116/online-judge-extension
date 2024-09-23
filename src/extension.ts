@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import * as child_process from "node:child_process";
 import * as path from "node:path";
-import { check_py_version, check_oj_version, check_oj_api_version, has_selenium } from "./checker";
+import * as copy_paste from "copy-paste";
+import { check_py_version, check_oj_version, check_oj_api_version, has_selenium, check_oj_verify_version } from "./checker";
 
 const services: { [name: string]: number } = {
     Aizu_Online_Judge: 1,
@@ -286,7 +287,19 @@ function get_problem_data(url: string, callback: any) {
             return;
         }
         const problem = JSON.parse(stdout);
-        callback(problem);
+        let name = "";
+        if ("name" in problem.result) name = problem.result.name;
+        else {
+            if (problem.result.url.startsWith("http://judge.u-aizu.ac.jp")) name = problem.result.url.split("=").at(-1);
+            else if (problem.result.url.startsWith("http://golf.shinh.org")) name = problem.result.url.split("?").at(-1).replaceAll("+", " ");
+            else if (problem.result.url.startsWith("https://csacademy.com")) name = problem.result.url.split("/").at(-2);
+            else if (problem.result.url.startsWith("https://www.facebook.com")) {
+                const v = problem.result.url.split("/");
+                name = v.at(-4) + "-" + v.at(-3) + "-" + v.at(-1);
+            } else if (problem.result.url.startsWith("http://poj.org/")) name = problem.result.url.split("?").at(-1);
+            else name = problem.result.url.split("/").at(-1);
+        }
+        callback(problem, name);
     });
 }
 
@@ -332,30 +345,30 @@ export function activate(context: vscode.ExtensionContext) {
     let setup = vscode.commands.registerCommand("online-judge-extension.setup", async () => {
         if (!(await check_py_version())) return;
 
-        vscode.window.showInformationMessage("Installing setuptools...");
+        vscode.window.showInformationMessage("Checking...");
         child_process.exec("pip3 install setuptools", (error, stdout, stderr) => {
             if (stdout !== "") console.log(stdout);
             if (stderr !== "") console.error(stderr);
-            if (error) {
-                vscode.window.showErrorMessage("Something went wrong.");
-                return;
-            }
-            vscode.window.showInformationMessage("Installing Selenium...");
-            child_process.exec("pip3 install selenium", (error, stdout, stderr) => {
-                if (stdout !== "") console.log(stdout);
-                if (stderr !== "") console.error(stderr);
-                if (error) {
-                    vscode.window.showErrorMessage("Something went wrong.");
-                    return;
-                }
-                vscode.window.showInformationMessage("Installing online-judge-tools...");
-                child_process.exec("pip3 install online-judge-tools", (error, stdout, stderr) => {
-                    if (stdout !== "") console.log(stdout);
-                    if (stderr !== "") console.error(stderr);
-                    if (error) vscode.window.showErrorMessage("Something went wrong.");
-                    vscode.window.showInformationMessage("online-judge-tools installed successfully.");
-                });
-            });
+            if (error) vscode.window.showErrorMessage("Something went wrong during the installation of setuptools.");
+            else vscode.window.showInformationMessage("setuptools installed successfully.");
+        });
+        child_process.exec("pip3 install selenium", (error, stdout, stderr) => {
+            if (stdout !== "") console.log(stdout);
+            if (stderr !== "") console.error(stderr);
+            if (error) vscode.window.showErrorMessage("Something went wrong during the installation of selenium.");
+            else vscode.window.showInformationMessage("selenium installed successfully.");
+        });
+        child_process.exec("pip3 install online-judge-tools", (error, stdout, stderr) => {
+            if (stdout !== "") console.log(stdout);
+            if (stderr !== "") console.error(stderr);
+            if (error) vscode.window.showErrorMessage("Something went wrong during the installation of online-judge-tools.");
+            else vscode.window.showInformationMessage("online-judge-tools installed successfully.");
+        });
+        child_process.exec("pip3 install online-judge-verify-helper", (error, stdout, stderr) => {
+            if (stdout !== "") console.log(stdout);
+            if (stderr !== "") console.error(stderr);
+            if (error) vscode.window.showErrorMessage("Something went wrong during the installation of online-judge-verify-helper.");
+            else vscode.window.showInformationMessage("online-judge-verify-helper installed successfully.");
         });
     });
     context.subscriptions.push(setup);
@@ -416,19 +429,7 @@ export function activate(context: vscode.ExtensionContext) {
             prompt: "Enter the problem url.",
         });
         if (problem_url === undefined || problem_url === "") return;
-        get_problem_data(problem_url, async (problem: any) => {
-            let name = "";
-            if ("name" in problem.result) name = problem.result.name;
-            else {
-                if (problem.result.url.startsWith("http://judge.u-aizu.ac.jp")) name = problem.result.url.split("=").at(-1);
-                else if (problem.result.url.startsWith("http://golf.shinh.org")) name = problem.result.url.split("?").at(-1).replaceAll("+", " ");
-                else if (problem.result.url.startsWith("https://csacademy.com")) name = problem.result.url.split("/").at(-2);
-                else if (problem.result.url.startsWith("https://www.facebook.com")) {
-                    const v = problem.result.url.split("/");
-                    name = v.at(-4) + "-" + v.at(-3) + "-" + v.at(-1);
-                } else if (problem.result.url.startsWith("http://poj.org/")) name = problem.result.url.split("?").at(-1);
-                else name = problem.result.url.split("/").at(-1);
-            }
+        get_problem_data(problem_url, async (problem: any, name: string) => {
             const dir = vscode.Uri.joinPath(target_directory, make_file_folder_name(name));
             await vscode.workspace.fs.createDirectory(dir);
             vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir, "problem.oje.json"), new TextEncoder().encode(JSON.stringify(problem, null, 4)));
@@ -484,6 +485,10 @@ export function activate(context: vscode.ExtensionContext) {
                 });
             });
         } else if (await file_exists(vscode.Uri.joinPath(target_directory, "problem.oje.json"))) {
+            const template = await get_template();
+            if (template === undefined) return;
+            const [template_uri, file_or_command] = template;
+            const url: string = JSON.parse((await vscode.workspace.fs.readFile(vscode.Uri.joinPath(target_directory, "problem.oje.json"))).toString()).result.url;
             // TODO
         } else {
             vscode.window.showErrorMessage("Something went wrong.");
@@ -500,7 +505,55 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(login);
 
-    //let disposable4 = vscode.commands.registerCommand("online-judge-extention.submit", async () => {});
+    let bundle = vscode.commands.registerCommand("online-judge-extension.bundle", async (target_file: vscode.Uri) => {
+        if (!(await check_oj_verify_version())) return;
+
+        const config = vscode.workspace.getConfiguration("oje");
+        let include_path = config.get<string[]>("includePath");
+        if (include_path === undefined) {
+            vscode.window.showErrorMessage('Failed to get configuration: "Oje: includePath"');
+            return;
+        }
+
+        vscode.window.withProgress(
+            {
+                title: `Bundling ${path.basename(target_file.fsPath)}`,
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+            },
+            async (progress) => {
+                return new Promise(async (resolve) => {
+                    let interval: any;
+                    let customCancellationToken = new vscode.CancellationTokenSource();
+                    customCancellationToken.token.onCancellationRequested(() => {
+                        customCancellationToken.dispose();
+                        resolve(null);
+                        return;
+                    });
+                    let loopCounter = 1;
+                    progress.report({ message: "working." });
+                    interval = setInterval(() => {
+                        loopCounter++;
+                        if (loopCounter > 3) loopCounter = 1;
+                        progress.report({ message: "working" + ".".repeat(loopCounter) });
+                    }, 300);
+                    child_process.exec(`cd ${path.dirname(target_file.fsPath)} && oj-bundle ${target_file.fsPath}${include_path.map((value) => " -I " + value).join()}`, (error, stdout, stderr) => {
+                        if (stderr !== "") console.error(stderr);
+                        if (error) {
+                            vscode.window.showErrorMessage("Faild to bundle the file.");
+                            return;
+                        }
+                        copy_paste.copy(stdout, () => {
+                            clearInterval(interval);
+                            progress.report({ message: "copied to clipboard." });
+                            setTimeout(() => customCancellationToken.cancel(), 2500);
+                        });
+                    });
+                });
+            }
+        );
+    });
+    context.subscriptions.push(bundle);
 }
 
 export function deactivate() {}
