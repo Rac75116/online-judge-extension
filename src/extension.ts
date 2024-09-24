@@ -68,6 +68,12 @@ async function file_exists(uri: vscode.Uri) {
     }
 }
 
+function get_config_checking<type>(name: string) {
+    const result = vscode.workspace.getConfiguration("oje").get<type>(name);
+    if (result === undefined) vscode.window.showErrorMessage(`Failed to get configuration: "Oje: ${name}"`);
+    return result;
+}
+
 async function select_service(target: number[]) {
     if (target.length === 1) {
         return target[0];
@@ -83,8 +89,7 @@ function make_file_folder_name(old: string) {
 }
 
 async function get_template(): Promise<[vscode.Uri | undefined, string] | undefined> {
-    const config = vscode.workspace.getConfiguration("oje");
-    const template_path = config.get<string>("templateFile");
+    const template_path = get_config_checking<string>("templateFile");
     let template_uri: vscode.Uri | undefined = undefined;
     let file_or_command = "Main";
     if (template_path !== undefined && template_path !== "") {
@@ -303,21 +308,17 @@ function get_problem_data(url: string, callback: any) {
     });
 }
 
-function submit_code(target: vscode.Uri, problem: string, callback?: any) {
-    const config = vscode.workspace.getConfiguration("oje");
-    const config_cxx_latest = config.get<boolean>("guessC++Latest");
-    const config_cxx_compiler = config.get<string>("guessC++Compiler");
-    const config_py_version = config.get<string>("guessPythonVersion");
-    const config_py_interpreter = config.get<string>("guessPythonInterpreter");
-    const config_open_brower = config.get<boolean>("openBrowser");
-    if (config_cxx_latest === undefined || config_cxx_compiler === undefined || config_py_version === undefined || config_py_interpreter === undefined || config_open_brower === undefined) {
-        vscode.window.showErrorMessage("Failed to get configuration.");
-        return;
-    }
+function submit_code(target: vscode.Uri, problem: string) {
+    const config_cxx_latest = get_config_checking<boolean>("guessC++Latest");
+    const config_cxx_compiler = get_config_checking<string>("guessC++Compiler");
+    const config_py_version = get_config_checking<string>("guessPythonVersion");
+    const config_py_interpreter = get_config_checking<string>("guessPythonInterpreter");
+    const config_open_brower = get_config_checking<boolean>("openBrowser");
+    if (config_cxx_latest === undefined || config_cxx_compiler === undefined || config_py_version === undefined || config_py_interpreter === undefined || config_open_brower === undefined) return;
     const cxx_latest = config_cxx_latest ? "--guess-cxx-latest" : "--no-guess-latest";
-    const cxx_compiler = "--guess-cxx-compiler " + config_cxx_compiler === "GCC" ? "gcc" : config_cxx_compiler === "Clang" ? "clang" : "all";
-    const py_version = "--guess-python-version " + config_py_version === "Python2" ? "2" : config_py_version === "Python3" ? "3" : config_py_version === "Auto" ? "auto" : "all";
-    const py_interpreter = "--guess-python-interpreter " + config_py_interpreter === "CPython" ? "cpython" : config_py_interpreter === "PyPy" ? "pypy" : "all";
+    const cxx_compiler = "--guess-cxx-compiler " + (config_cxx_compiler === "GCC" ? "gcc" : config_cxx_compiler === "Clang" ? "clang" : "all");
+    const py_version = "--guess-python-version " + (config_py_version === "Python2" ? "2" : config_py_version === "Python3" ? "3" : config_py_version === "Auto" ? "auto" : "all");
+    const py_interpreter = "--guess-python-interpreter " + (config_py_interpreter === "CPython" ? "cpython" : config_py_interpreter === "PyPy" ? "pypy" : "all");
     const open_brower = config_open_brower ? "--open" : "--no-open";
 
     child_process.exec(`oj submit --wait 0 --yes ${cxx_latest} ${cxx_compiler} ${py_version} ${py_interpreter} ${open_brower} ${problem} ${target.fsPath}`, (error, stdout, stderr) => {
@@ -327,15 +328,6 @@ function submit_code(target: vscode.Uri, problem: string, callback?: any) {
             vscode.window.showErrorMessage("Something went wrong.");
             return;
         }
-        /*
-        if (browse) {
-            child_process.exec(`python -m webbrowser -t "${res.result.url}"`, (error, stdout, stderr) => {
-                if (stdout !== "") console.log(stdout);
-                if (stderr !== "") console.error(stderr);
-                if (error) vscode.window.showErrorMessage("Failed to open browser.");
-            });
-        } else console.log("submission: ", res.result.url);
-        */
     });
 }
 
@@ -346,29 +338,42 @@ export function activate(context: vscode.ExtensionContext) {
         if (!(await check_py_version())) return;
 
         vscode.window.showInformationMessage("Checking...");
-        child_process.exec("pip3 install setuptools", (error, stdout, stderr) => {
+        let cnt = 4;
+        child_process.exec("pip3 install -U setuptools", (error, stdout, stderr) => {
             if (stdout !== "") console.log(stdout);
             if (stderr !== "") console.error(stderr);
             if (error) vscode.window.showErrorMessage("Something went wrong during the installation of setuptools.");
-            else vscode.window.showInformationMessage("setuptools installed successfully.");
+            else {
+                vscode.window.showInformationMessage("setuptools installed successfully.");
+                if (--cnt == 0) vscode.window.showInformationMessage("Everything needed is now installed.");
+            }
         });
-        child_process.exec("pip3 install selenium", (error, stdout, stderr) => {
+        child_process.exec("pip3 install -U selenium", (error, stdout, stderr) => {
             if (stdout !== "") console.log(stdout);
             if (stderr !== "") console.error(stderr);
             if (error) vscode.window.showErrorMessage("Something went wrong during the installation of selenium.");
-            else vscode.window.showInformationMessage("selenium installed successfully.");
+            else {
+                vscode.window.showInformationMessage("selenium installed successfully.");
+                if (--cnt == 0) vscode.window.showInformationMessage("Everything needed is now installed.");
+            }
         });
-        child_process.exec("pip3 install online-judge-tools", (error, stdout, stderr) => {
+        child_process.exec("pip3 install -U online-judge-tools", (error, stdout, stderr) => {
             if (stdout !== "") console.log(stdout);
             if (stderr !== "") console.error(stderr);
             if (error) vscode.window.showErrorMessage("Something went wrong during the installation of online-judge-tools.");
-            else vscode.window.showInformationMessage("online-judge-tools installed successfully.");
+            else {
+                vscode.window.showInformationMessage("online-judge-tools installed successfully.");
+                if (--cnt == 0) vscode.window.showInformationMessage("Everything needed is now installed.");
+            }
         });
-        child_process.exec("pip3 install online-judge-verify-helper", (error, stdout, stderr) => {
+        child_process.exec("pip3 install -U online-judge-verify-helper", (error, stdout, stderr) => {
             if (stdout !== "") console.log(stdout);
             if (stderr !== "") console.error(stderr);
             if (error) vscode.window.showErrorMessage("Something went wrong during the installation of online-judge-verify-helper.");
-            else vscode.window.showInformationMessage("online-judge-verify-helper installed successfully.");
+            else {
+                vscode.window.showInformationMessage("online-judge-verify-helper installed successfully.");
+                if (--cnt == 0) vscode.window.showInformationMessage("Everything needed is now installed.");
+            }
         });
     });
     context.subscriptions.push(setup);
@@ -499,21 +504,29 @@ export function activate(context: vscode.ExtensionContext) {
     let login = vscode.commands.registerCommand("online-judge-extension.login", async () => {
         const info = await Promise.all([check_oj_version(), has_selenium()]);
         if (!info[0]) return;
-        const service = await select_service([services.Atcoder, services.Codeforces, services.HackerRank, services.Toph, services.yukicoder]);
+        const service = await select_service([services.Atcoder, /* services.Codeforces, */ services.HackerRank, services.Toph, services.yukicoder]);
         if (service === undefined) return;
         login_service(service, info[1]);
     });
     context.subscriptions.push(login);
 
+    let submit = vscode.commands.registerCommand("online-judge-extension.submit", async (target_file: vscode.Uri) => {
+        if (!(await check_oj_version())) return;
+        const problem_url = await vscode.window.showInputBox({
+            ignoreFocusOut: true,
+            placeHolder: "ex) https://codeforces.com/contest/1606/problem/A",
+            prompt: "Enter the problem url.",
+        });
+        if (problem_url === undefined) return;
+        submit_code(target_file, problem_url);
+    });
+    context.subscriptions.push(submit);
+
     let bundle = vscode.commands.registerCommand("online-judge-extension.bundle", async (target_file: vscode.Uri) => {
         if (!(await check_oj_verify_version())) return;
 
-        const config = vscode.workspace.getConfiguration("oje");
-        let include_path = config.get<string[]>("includePath");
-        if (include_path === undefined) {
-            vscode.window.showErrorMessage('Failed to get configuration: "Oje: includePath"');
-            return;
-        }
+        let include_path = get_config_checking<string[]>("includePath");
+        if (include_path === undefined) return;
 
         vscode.window.withProgress(
             {
@@ -541,6 +554,7 @@ export function activate(context: vscode.ExtensionContext) {
                         if (stderr !== "") console.error(stderr);
                         if (error) {
                             vscode.window.showErrorMessage("Faild to bundle the file.");
+                            customCancellationToken.cancel();
                             return;
                         }
                         copy_paste.copy(stdout, () => {

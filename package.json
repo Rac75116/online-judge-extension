@@ -34,6 +34,11 @@
                 "title": "Oje: Add Problem"
             },
             {
+                "command": "online-judge-extension.submit",
+                "title": "Oje: Submit Code",
+                "icon": "$(cloud-upload)"
+            },
+            {
                 "command": "online-judge-extension.bundle",
                 "title": "Oje: Bundle C/C++ Headers",
                 "icon": "$(folder-library)"
@@ -69,6 +74,11 @@
                 }
             ],
             "editor/title": [
+                {
+                    "command": "online-judge-extension.submit",
+                    "when": "editorLangId == cpp || editorLangId == python || editorLangId == java || editorLangId == rust || editorLangId == c || editorLangId == csharp",
+                    "group": "navigation"
+                },
                 {
                     "command": "online-judge-extension.bundle",
                     "when": "editorLangId == cpp || editorLangId == c",
