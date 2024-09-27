@@ -15,7 +15,7 @@
         "commands": [
             {
                 "command": "online-judge-extension.setup",
-                "title": "Oje: Install online-judge-tools"
+                "title": "Oje: Install necessary tools"
             },
             {
                 "command": "online-judge-extension.createdir",
@@ -135,9 +135,19 @@
                         "description": "Specify include paths in \"bundle\" or \"submit\" command.",
                         "default": []
                     },
+                    "oje.bundleBeforeSubmission": {
+                        "type": "boolean",
+                        "description": "Controls whether to bundle the file in \"submit\" command.",
+                        "default": true
+                    },
+                    "oje.hidePath": {
+                        "type": "boolean",
+                        "description": "Controls whether to hide filepaths at #line directives in \"submit\" command.",
+                        "default": true
+                    },
                     "oje.openBrowser": {
                         "type": "boolean",
-                        "description": "Controls whether to open the result page after submission.",
+                        "description": "Controls whether to open the result page in \"submit\" command.",
                         "default": true
                     }
                 }
