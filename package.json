@@ -142,7 +142,12 @@
                     },
                     "oje.hidePath": {
                         "type": "boolean",
-                        "description": "Controls whether to hide filepaths at #line directives in \"submit\" command.",
+                        "description": "Controls whether to hide filepaths at `#line` directives in \"bundle\" or \"submit\" command.",
+                        "default": true
+                    },
+                    "oje.eraseLineDirectives": {
+                        "type": "boolean",
+                        "description": "Controls whether to erase `#line` directives in \"bundle\" or \"submit\" command.",
                         "default": true
                     },
                     "oje.openBrowser": {

@@ -305,17 +305,22 @@ async function get_problem_data(url: string) {
     return { problem, name };
 }
 
-async function hide_filepath(code: string) {
+function hide_filepath(code: string) {
     return code.replaceAll(/#line\s(\d+)\sR?".*"/g, "#line $1");
+}
+
+function erase_line_directives(code: string) {
+    return code.replaceAll(/#line\s\d+(\sR?".*")?/g, "");
 }
 
 async function bundle_code(target: vscode.Uri) {
     const config_include_path = get_config_checking<string[]>("includePath");
     const config_hide_path = get_config_checking<boolean>("hidePath");
+    const config_erase_line_directives = get_config_checking<boolean>("eraseLineDirectives");
     const { error, stdout, stderr } = await async_exec(`cd ${path.dirname(target.fsPath)} && oj-bundle ${target.fsPath}${config_include_path.map((value) => " -I " + value).join()}`);
     if (stderr !== "") console.error(stderr);
     if (error) throw new Error("Failed to bundle the file.");
-    return config_hide_path ? hide_filepath(stdout) : stdout;
+    return config_erase_line_directives ? erase_line_directives(stdout) : config_hide_path ? hide_filepath(stdout) : stdout;
 }
 
 async function submit_code(target: vscode.Uri, problem: string) {
@@ -340,11 +345,13 @@ async function submit_code(target: vscode.Uri, problem: string) {
         target = vscode.Uri.joinPath(target, `../${path.basename(target.fsPath)}.bundled${path.extname(target.fsPath)}`);
         await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(bundled));
     } else {
+        const config_erase_line_directives = get_config_checking<boolean>("eraseLineDirectives");
         const config_hide_path = get_config_checking<boolean>("hidePath");
-        if (config_hide_path) {
+        if (config_erase_line_directives || config_hide_path) {
             del_target = true;
+            const code = new TextDecoder().decode(await vscode.workspace.fs.readFile(target));
             const new_target = vscode.Uri.joinPath(target, `../${path.basename(target.fsPath)}.bundled${path.extname(target.fsPath)}`);
-            await vscode.workspace.fs.copy(target, new_target, { overwrite: true });
+            await vscode.workspace.fs.writeFile(new_target, new TextEncoder().encode(config_erase_line_directives ? erase_line_directives(code) : hide_filepath(code)));
             target = new_target;
         }
     }
