@@ -5,6 +5,7 @@ import { services, service_url, async_exec, file_exists, get_config_checking, se
 import { check_oj_version, check_oj_api_version, check_oj_verify_version } from "./checker";
 import { setup_command } from "./setup";
 import { login_command } from "./login";
+import { logout_command } from "./logout";
 
 async function get_template(): Promise<[vscode.Uri | undefined, string]> {
     const template_path = get_config_checking<string>("templateFile");
@@ -292,6 +293,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(setup_command);
     context.subscriptions.push(login_command);
+    context.subscriptions.push(logout_command);
 
     let createdir = vscode.commands.registerCommand("online-judge-extension.createdir", async (target_directory: vscode.Uri) => {
         if (!(await check_oj_api_version())) {

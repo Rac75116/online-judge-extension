@@ -23,7 +23,11 @@
             },
             {
                 "command": "online-judge-extension.login",
-                "title": "Oj-ext: Log in to the Service"
+                "title": "Oj-ext: Sign in to the Service"
+            },
+            {
+                "command": "online-judge-extension.logout",
+                "title": "Oj-ext: Sign out of the Services"
             },
             {
                 "command": "online-judge-extension.update",

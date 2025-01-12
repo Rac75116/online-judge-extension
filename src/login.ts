@@ -16,20 +16,35 @@ export async function login_service(service: number, use_selenium: boolean | any
         return;
     }
     if (use_selenium) {
-        vscode.window.showInformationMessage("Please wait a moment...");
-        const { error, stdout, stderr } = await async_exec(`oj login ${url}`);
-        if (stdout !== "") {
-            console.log(stdout);
-        }
-        if (stderr !== "") {
-            console.error(stderr);
-        }
-        if (error) {
-            throw new Error("Something went wrong.");
-        }
-        vscode.window.showInformationMessage("Signed in successfully.");
+        vscode.window.withProgress(
+            {
+                title: `Login`,
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+            },
+            async (progress) => {
+                return new Promise(async (resolve) => {
+                    progress.report({ message: "Prease wait a moment..." });
+                    let ended = false;
+                    setTimeout(() => !ended && progress.report({ message: "The process ends automatically when the window is closed." }), 3000);
+                    const { error, stdout, stderr } = await async_exec(`oj login --use-browser always ${url}`);
+                    ended = true;
+                    if (stdout !== "") {
+                        console.log(stdout);
+                    }
+                    if (stderr !== "") {
+                        console.error(stderr);
+                    }
+                    if (error) {
+                        throw new Error(stdout.includes("[FAILURE] You are not signed in.") ? "You are not signed in." : "Something went wrong.");
+                    }
+                    resolve(null);
+                    vscode.window.showInformationMessage("Signed in successfully.");
+                });
+            }
+        );
     } else {
-        if (service !== services.Atcoder && service !== services.Codeforces) {
+        if (service !== services.Codeforces) {
             throw new Error('Cannot sign in because Selenium is not installed. Run "pip3 install selenium".');
         }
         const user = await vscode.window.showInputBox({
