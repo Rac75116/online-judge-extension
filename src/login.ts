@@ -16,14 +16,14 @@ export async function login_service(service: number, use_selenium: boolean | any
         return;
     }
     if (use_selenium) {
-        vscode.window.withProgress(
+        await vscode.window.withProgress(
             {
                 title: `Login`,
                 location: vscode.ProgressLocation.Notification,
                 cancellable: false,
             },
             async (progress) => {
-                return new Promise(async (resolve) => {
+                return new Promise(async (resolve, reject) => {
                     progress.report({ message: "Prease wait a moment..." });
                     let ended = false;
                     setTimeout(() => !ended && progress.report({ message: "The process ends automatically when the window is closed." }), 3000);
@@ -36,7 +36,8 @@ export async function login_service(service: number, use_selenium: boolean | any
                         console.error(stderr);
                     }
                     if (error) {
-                        throw new Error(stdout.includes("[FAILURE] You are not signed in.") ? "You are not signed in." : "Something went wrong.");
+                        reject(new Error(stdout.includes("[FAILURE] You are not signed in.") ? "You are not signed in." : "Something went wrong."));
+                        return;
                     }
                     resolve(null);
                     vscode.window.showInformationMessage("Signed in successfully.");

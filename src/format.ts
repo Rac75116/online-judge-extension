@@ -149,7 +149,7 @@ BasedOnStyle: GNU
 };
 
 export async function format_code(dirpath: string, source_code: string) {
-    const format_style = get_config_checking<string>("oj-ext.formatStyle");
+    const format_style = get_config_checking<string>("formatStyle");
     if (format_style === "Never") {
         return source_code;
     }

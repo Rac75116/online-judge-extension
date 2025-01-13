@@ -32,7 +32,7 @@ export const bundle_command = vscode.commands.registerCommand("online-judge-exte
         return;
     }
 
-    vscode.window.withProgress(
+    await vscode.window.withProgress(
         {
             title: `Bundling ${path.basename(target_file.fsPath)}`,
             location: vscode.ProgressLocation.Notification,
@@ -50,19 +50,19 @@ export const bundle_command = vscode.commands.registerCommand("online-judge-exte
                     }
                     progress.report({ message: "working" + ".".repeat(loopCounter) });
                 }, 300);
-                let bundled: string;
                 try {
+                    let bundled: string;
                     bundled = await bundle_code(target_file);
-                } catch (error: any) {
+                    bundled = await format_code(path.dirname(target_file.fsPath), bundled);
+                    copyPaste.copy(bundled, () => {
+                        clearInterval(interval);
+                        progress.report({ message: "copied to clipboard." });
+                        setTimeout(() => resolve(null), 2500);
+                    });
+                } catch (error) {
                     reject(error);
                     return;
                 }
-                bundled = await format_code(path.dirname(target_file.fsPath), bundled);
-                copyPaste.copy(bundled, () => {
-                    clearInterval(interval);
-                    progress.report({ message: "copied to clipboard." });
-                    setTimeout(() => resolve(null), 2500);
-                });
             });
         }
     );

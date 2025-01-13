@@ -5,7 +5,8 @@ import { get_config_checking, async_exec } from "./global";
 import { bundle_code, erase_line_directives, hide_filepath } from "./bundle";
 import { format_code } from "./format";
 
-export async function submit_code(target: vscode.Uri, problem: string) {
+export async function submit_code(target: vscode.Uri, problem: string, reporter: (message: string) => void) {
+    reporter("Getting settings...");
     const config_cxx_latest = get_config_checking<boolean>("guessC++Latest");
     const config_cxx_compiler = get_config_checking<string>("guessC++Compiler");
     const config_py_version = get_config_checking<string>("guessPythonVersion");
@@ -22,10 +23,10 @@ export async function submit_code(target: vscode.Uri, problem: string) {
     const open_brower = config_open_brower ? "--open" : "--no-open";
 
     const is_cxx = [".c", ".C", ".cc", ".cp", ".cpp", ".cxx", ".c++", ".h", ".H", ".hh", ".hp", ".hpp", ".hxx", ".h++"].includes(path.extname(target.fsPath));
-    let del_target = false;
     if (config_bundle && is_cxx) {
-        del_target = true;
+        reporter("Bundling...");
         let bundled = await bundle_code(target);
+        reporter("Formatting...");
         bundled = await format_code(path.dirname(target.fsPath), bundled);
         target = vscode.Uri.joinPath(target, `../${path.basename(target.fsPath)}.bundled${path.extname(target.fsPath)}`);
         await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(bundled));
@@ -33,19 +34,26 @@ export async function submit_code(target: vscode.Uri, problem: string) {
         const config_erase_line_directives = get_config_checking<boolean>("eraseLineDirectives");
         const config_hide_path = get_config_checking<boolean>("hidePath");
         if (config_erase_line_directives || config_hide_path) {
-            del_target = true;
+            reporter("Bundling...");
             let code = new TextDecoder().decode(await vscode.workspace.fs.readFile(target));
             const new_target = vscode.Uri.joinPath(target, `../${path.basename(target.fsPath)}.bundled${path.extname(target.fsPath)}`);
             code = config_erase_line_directives ? erase_line_directives(code) : hide_filepath(code);
+            reporter("Formatting...");
+            code = await format_code(path.dirname(target.fsPath), code);
+            await vscode.workspace.fs.writeFile(new_target, new TextEncoder().encode(code));
+            target = new_target;
+        } else {
+            reporter("Formatting...");
+            let code = new TextDecoder().decode(await vscode.workspace.fs.readFile(target));
+            const new_target = vscode.Uri.joinPath(target, `../${path.basename(target.fsPath)}.bundled${path.extname(target.fsPath)}`);
             code = await format_code(path.dirname(target.fsPath), code);
             await vscode.workspace.fs.writeFile(new_target, new TextEncoder().encode(code));
             target = new_target;
         }
     }
+    reporter("Submitting...");
     const { error, stdout, stderr } = await async_exec(`oj submit --wait 0 --yes ${cxx_latest} ${cxx_compiler} ${py_version} ${py_interpreter} ${open_brower} ${problem} ${target.fsPath}`);
-    if (del_target) {
-        vscode.workspace.fs.delete(target);
-    }
+    vscode.workspace.fs.delete(target);
     if (stdout !== "") {
         console.log(stdout);
     }
@@ -64,11 +72,32 @@ export const submit_command = vscode.commands.registerCommand("online-judge-exte
 
     const problem_url = await vscode.window.showInputBox({
         ignoreFocusOut: true,
-        placeHolder: "ex) https://codeforces.com/contest/1606/problem/A",
+        placeHolder: "e.g. https://codeforces.com/contest/1606/problem/A",
         prompt: "Enter the problem url.",
     });
     if (problem_url === undefined) {
         return;
     }
-    submit_code(target_file, problem_url);
+    await vscode.window.withProgress(
+        {
+            title: `Submit`,
+            location: vscode.ProgressLocation.Notification,
+            cancellable: false,
+        },
+        async (progress) => {
+            return new Promise(async (resolve, reject) => {
+                progress.report({ message: "Waiting..." });
+                try {
+                    await submit_code(target_file, problem_url, (message) => {
+                        progress.report({ message: message });
+                    });
+                } catch (error) {
+                    reject(error);
+                    return;
+                }
+                progress.report({ message: "Successfully submitted." });
+                setTimeout(() => resolve(null), 2500);
+            });
+        }
+    );
 });

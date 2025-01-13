@@ -41,18 +41,23 @@ export const setup_command = vscode.commands.registerCommand("online-judge-exten
     if (!(await check_py_version())) {
         return;
     }
-    vscode.window.withProgress(
+    await vscode.window.withProgress(
         {
             title: `Setup`,
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
         },
         async (progress) => {
-            return new Promise(async (resolve) => {
+            return new Promise(async (resolve, reject) => {
                 progress.report({ message: "Installing...", increment: 0 });
-                await setup((increment) => {
-                    progress.report({ message: "Installing...", increment: increment });
-                });
+                try {
+                    await setup((increment) => {
+                        progress.report({ message: "Installing...", increment: increment });
+                    });
+                } catch (error) {
+                    reject(error);
+                    return;
+                }
                 progress.report({ message: "Everything needed is now installed." });
                 setTimeout(() => resolve(null), 5000);
             });

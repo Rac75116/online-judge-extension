@@ -1,11 +1,11 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
 import { services, service_url, async_exec, file_exists, get_config_checking, select_service, make_file_folder_name } from "./global";
-import { check_oj_version, check_oj_api_version } from "./checker";
+import { check_oj_api_version } from "./checker";
 import { setup_command } from "./setup";
 import { login_command } from "./login";
 import { logout_command } from "./logout";
-import { bundle_code, hide_filepath, erase_line_directives, bundle_command } from "./bundle";
+import { bundle_command } from "./bundle";
 import { submit_command } from "./submit";
 
 async function get_template(): Promise<[vscode.Uri | undefined, string]> {
