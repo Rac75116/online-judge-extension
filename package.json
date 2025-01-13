@@ -136,22 +136,39 @@
                     },
                     "oj-ext.includePath": {
                         "type": "array",
-                        "description": "Specify include paths in \"bundle\" or \"submit\" command.",
+                        "description": "Specify include paths in \"bundle\" or \"submit\" command. (C/C++ only)",
                         "default": []
                     },
                     "oj-ext.bundleBeforeSubmission": {
                         "type": "boolean",
-                        "description": "Controls whether to bundle the file in \"submit\" command.",
+                        "description": "Controls whether to bundle the file in \"submit\" command. (C/C++ only)",
                         "default": true
+                    },
+                    "oj-ext.formatStyle": {
+                        "type": "string",
+                        "enum": [
+                            "Never",
+                            "Inherit",
+                            "Compress",
+                            "LLVM",
+                            "Google",
+                            "Chromium",
+                            "Mozilla",
+                            "WebKit",
+                            "Microsoft",
+                            "GNU"
+                        ],
+                        "default": "Never",
+                        "markdownDescription": "Controls whether to compress the source code in \"bundle\" or \"submit\" command. (C/C++ only)\n- `Never`: Do not format\n- `Inherit`: Format with a .clang-format file in the working directory\n - `Compress`: Eliminate indentations and other white spaces wherever possible\n- `LLVM`: Format with the LLVM coding standards\n- `Google`: Format with Google's C++ style guide\n- `Chromium`: Format with Chromium's style guide\n- `Mozilla`: Format with Mozilla's style guide\n- `WebKit`: Format with WebKit's style guide\n- `Microsoft`: Format with Microsoft's style guide\n- `GNU`: Format with the GNU coding standards\n"
                     },
                     "oj-ext.hidePath": {
                         "type": "boolean",
-                        "description": "Controls whether to hide filepaths at `#line` directives in \"bundle\" or \"submit\" command.",
+                        "description": "Controls whether to hide filepaths at `#line` directives in \"bundle\" or \"submit\" command. (C/C++ only)",
                         "default": true
                     },
                     "oj-ext.eraseLineDirectives": {
                         "type": "boolean",
-                        "description": "Controls whether to erase `#line` directives in \"bundle\" or \"submit\" command.",
+                        "description": "Controls whether to erase `#line` directives in \"bundle\" or \"submit\" command. (C/C++ only)",
                         "default": true
                     },
                     "oj-ext.openBrowser": {
