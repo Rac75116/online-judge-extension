@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as path from "node:path";
 import * as childProcess from "node:child_process";
 
 export const services: { [name: string]: number } = {
@@ -98,4 +99,25 @@ export async function select_service(target: number[]) {
 
 export function make_file_folder_name(old: string) {
     return old.replaceAll("\\", "_").replaceAll("/", "_").replaceAll(":", "_").replaceAll("*", "_").replaceAll("?", "_").replaceAll('"', "_").replaceAll("<", "_").replaceAll(">", "_").replaceAll("|", "_").replaceAll(";", "_").replaceAll("%", "_");
+}
+
+export async function get_template(): Promise<[vscode.Uri | undefined, string]> {
+    const template_path = get_config_checking<string>("templateFile");
+    let template_uri: vscode.Uri | undefined = undefined;
+    let file_or_command = "Main";
+    if (template_path !== "") {
+        template_uri = vscode.Uri.file(template_path);
+        const ft = await file_exists(template_uri);
+        if (ft !== vscode.FileType.File) {
+            if (ft === vscode.FileType.Directory) {
+                throw new Error('"Template File" path is a directory, not a file.');
+            } else if (ft === vscode.FileType.SymbolicLink) {
+                throw new Error('"Template File" path is a symbolic link, not a file.');
+            } else {
+                throw new Error('The file pointed to by "Template File" path does not exist.');
+            }
+        }
+        file_or_command = path.basename(template_path);
+    }
+    return [template_uri, file_or_command];
 }

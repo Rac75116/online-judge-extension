@@ -40,23 +40,14 @@ export const bundle_command = vscode.commands.registerCommand("online-judge-exte
         },
         async (progress) => {
             return new Promise(async (resolve, reject) => {
-                let interval: any;
-                let loopCounter = 1;
-                progress.report({ message: "working." });
-                interval = setInterval(() => {
-                    loopCounter++;
-                    if (loopCounter > 3) {
-                        loopCounter = 1;
-                    }
-                    progress.report({ message: "working" + ".".repeat(loopCounter) });
-                }, 300);
                 try {
-                    let bundled: string;
-                    bundled = await bundle_code(target_file);
+                    progress.report({ message: "Bundling..." });
+                    let bundled = await bundle_code(target_file);
+                    progress.report({ message: "Formatting..." });
                     bundled = await format_code(path.dirname(target_file.fsPath), bundled);
+                    progress.report({ message: "Copying..." });
                     copyPaste.copy(bundled, () => {
-                        clearInterval(interval);
-                        progress.report({ message: "copied to clipboard." });
+                        progress.report({ message: "Copied to clipboard." });
                         setTimeout(() => resolve(null), 2500);
                     });
                 } catch (error) {
