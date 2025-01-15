@@ -44,11 +44,7 @@ export const addproblem_command = vscode.commands.registerCommand("online-judge-
         return;
     }
 
-    const template = await get_template();
-    if (template === undefined) {
-        return;
-    }
-    const [template_uri, file_or_command] = template;
+    const [template_uri, file_or_command] = await get_template();
     if (await file_exists(vscode.Uri.joinPath(target_directory, "contest.oj-ext.json"))) {
         vscode.window.showErrorMessage("Something went wrong.");
         return;

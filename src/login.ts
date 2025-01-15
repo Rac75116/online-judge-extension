@@ -45,7 +45,7 @@ export async function login_service(service: number, use_selenium: boolean | any
             }
         );
     } else {
-        if (service !== services.Codeforces) {
+        if (service !== services.AtCoder) {
             throw new Error('Cannot sign in because Selenium is not installed. Run "pip3 install selenium".');
         }
         const user = await vscode.window.showInputBox({
@@ -82,9 +82,9 @@ export const login_command = vscode.commands.registerCommand("online-judge-exten
     if (!info[0]) {
         return;
     }
-    const service = await select_service([services.Atcoder, /* services.Codeforces, */ services.HackerRank, services.Toph, services.yukicoder]);
+    const service = await select_service([services.Atcoder, /* services.Codeforces, */ services.HackerRank, services.Toph /*, services.yukicoder*/]);
     if (service === undefined) {
         return;
     }
-    login_service(service, info[1]);
+    await login_service(service, info[1]);
 });

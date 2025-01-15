@@ -5,8 +5,30 @@ const py_version = [3, 8];
 const oj_version = [12, 0, 0];
 const oj_api_version = [10, 10, 1];
 const oj_verify_version = [5, 6, 0];
+
+function satisfy_version(requested_version: number[], current_version: number[]) {
+    if (requested_version.length !== current_version.length) {
+        throw Error("Invalid Arguments");
+    }
+    const length = requested_version.length;
+    for (let i = 0; i < length; ++i) {
+        if (requested_version[i] < current_version[i]) {
+            return true;
+        }
+        if (requested_version[i] > current_version[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+let checked_py_version = false;
 export function check_py_version(): Promise<boolean> {
     return new Promise((resolve) => {
+        if (checked_py_version) {
+            resolve(true);
+            return;
+        }
         childProcess.exec("pip3 --version", (error, stdout, stderr) => {
             if (stdout !== "") {
                 console.log(stdout);
@@ -24,17 +46,24 @@ export function check_py_version(): Promise<boolean> {
                 .replace(/.*python (\d+)\.(\d+)\)/, "$1 $2")
                 .split(" ")
                 .map(Number);
-            if (py_version[0] > version[0] || py_version[1] > version[1]) {
+            if (satisfy_version(py_version, version)) {
                 vscode.window.showErrorMessage(`"Online Judge Extension" requires python ${py_version[0]}.${py_version[1]} or higher.`);
                 resolve(false);
                 return;
             }
+            checked_py_version = true;
             resolve(true);
         });
     });
 }
+
+let checked_oj_version = false;
 export function check_oj_version() {
     return new Promise((resolve) => {
+        if (checked_oj_version) {
+            resolve(true);
+            return;
+        }
         childProcess.exec("pip3 show online-judge-tools", (error, stdout, stderr) => {
             if (stdout !== "") {
                 console.log(stdout);
@@ -58,17 +87,24 @@ export function check_oj_version() {
                 resolve(false);
                 return;
             }
-            if (oj_version > version) {
+            if (!satisfy_version(oj_version, version)) {
                 vscode.window.showErrorMessage(`This extension requires online-judge-tools ${oj_version[0]}.${oj_version[1]}.${oj_version[2]} or higher.`);
                 resolve(false);
                 return;
             }
+            checked_oj_version = true;
             resolve(true);
         });
     });
 }
+
+let checked_oj_api_version = false;
 export function check_oj_api_version() {
     return new Promise((resolve) => {
+        if (checked_oj_api_version) {
+            resolve(true);
+            return;
+        }
         childProcess.exec("pip3 show online-judge-api-client", (error, stdout, stderr) => {
             if (stdout !== "") {
                 console.log(stdout);
@@ -92,17 +128,24 @@ export function check_oj_api_version() {
                 resolve(false);
                 return;
             }
-            if (oj_api_version > version) {
+            if (!satisfy_version(oj_api_version, version)) {
                 vscode.window.showErrorMessage(`This extension requires online-judge-api-client ${oj_api_version[0]}.${oj_api_version[1]}.${oj_api_version[2]} or higher.`);
                 resolve(false);
                 return;
             }
+            checked_oj_api_version = true;
             resolve(true);
         });
     });
 }
+
+let checked_oj_verify_version = false;
 export function check_oj_verify_version() {
     return new Promise((resolve) => {
+        if (checked_oj_verify_version) {
+            resolve(true);
+            return;
+        }
         childProcess.exec("pip3 show online-judge-verify-helper", (error, stdout, stderr) => {
             if (stdout !== "") {
                 console.log(stdout);
@@ -126,17 +169,24 @@ export function check_oj_verify_version() {
                 resolve(false);
                 return;
             }
-            if (oj_verify_version > version) {
+            if (!satisfy_version(oj_verify_version, version)) {
                 vscode.window.showErrorMessage(`This extension requires online-judge-verify-helper ${oj_verify_version[0]}.${oj_verify_version[1]}.${oj_verify_version[2]} or higher.`);
                 resolve(false);
                 return;
             }
+            checked_oj_verify_version = true;
             resolve(true);
         });
     });
 }
+
+let checked_has_selenium = false;
 export function has_selenium() {
     return new Promise((resolve) => {
+        if (checked_has_selenium) {
+            resolve(true);
+            return;
+        }
         childProcess.exec("pip3 show selenium", (error, stdout, stderr) => {
             if (stdout !== "") {
                 console.log(stdout);
@@ -144,7 +194,12 @@ export function has_selenium() {
             if (stderr !== "") {
                 console.error(stderr);
             }
-            resolve(!error);
+            if (error) {
+                resolve(false);
+                return;
+            }
+            checked_has_selenium = true;
+            resolve(true);
         });
     });
 }
