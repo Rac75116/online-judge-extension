@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import * as fs from "node:fs";
 import { async_exec, catch_error } from "./global";
 import { check_oj_version } from "./checker";
 
@@ -12,9 +11,7 @@ export async function remove_cookie() {
     if (cookie_path === undefined) {
         throw new Error("Something went wrong.");
     }
-    try {
-        fs.unlinkSync(cookie_path);
-    } catch {}
+    await vscode.workspace.fs.delete(vscode.Uri.file(cookie_path));
 }
 
 export const logout_command = vscode.commands.registerCommand("online-judge-extension.logout", async () => {

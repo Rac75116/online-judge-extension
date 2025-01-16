@@ -66,26 +66,26 @@
             "explorer/context": [
                 {
                     "command": "online-judge-extension.createdir",
-                    "when": "explorerResourceIsFolder"
+                    "when": "config.oj-ext.enableNavigation && explorerResourceIsFolder"
                 },
                 {
                     "command": "online-judge-extension.update",
-                    "when": "explorerResourceIsFolder"
+                    "when": "config.oj-ext.enableNavigation && explorerResourceIsFolder"
                 },
                 {
                     "command": "online-judge-extension.addproblem",
-                    "when": "explorerResourceIsFolder"
+                    "when": "config.oj-ext.enableNavigation && explorerResourceIsFolder"
                 }
             ],
             "editor/title": [
                 {
                     "command": "online-judge-extension.submit",
-                    "when": "editorLangId == cpp || editorLangId == python || editorLangId == java || editorLangId == rust || editorLangId == c || editorLangId == csharp",
+                    "when": "config.oj-ext.enableNavigation && (editorLangId == cpp || editorLangId == c || editorLangId == python || editorLangId == shellscript || editorLangId == csharp || editorLangId == clojure || editorLangId == d || editorLangId == fsharp || editorLangId == go || editorLangId == haskell || editorLangId == java || editorLangId == javascript || editorLangId == julia || editorLangId == lua || editorLangId == objective-c || editorLangId == ocaml || editorLangId == pascal || editorLangId == perl6 || editorLangId == perl || editorLangId == php || editorLangId == ruby || editorLangId == rust || editorLangId == swift || editorLangId == typescript || editorLangId == vb)",
                     "group": "navigation"
                 },
                 {
                     "command": "online-judge-extension.bundle",
-                    "when": "editorLangId == cpp || editorLangId == c",
+                    "when": "config.oj-ext.enableNavigation && (editorLangId == cpp || editorLangId == c)",
                     "group": "navigation"
                 }
             ]
@@ -94,6 +94,11 @@
             {
                 "title": "online-judge-extension",
                 "properties": {
+                    "oj-ext.enableNavigation": {
+                        "type": "boolean",
+                        "description": "Controls whether to show a button to execute a command in the editor or file explorer.",
+                        "default": true
+                    },
                     "oj-ext.templateFile": {
                         "type": "string",
                         "description": "Specify the path of the template program to be created with \"createdir\" command."
@@ -163,13 +168,18 @@
                     },
                     "oj-ext.hidePath": {
                         "type": "boolean",
-                        "description": "Controls whether to hide filepaths at `#line` directives in \"bundle\" or \"submit\" command. (C/C++ only)",
+                        "markdownDescription": "Controls whether to hide filepaths at `#line` directives in \"bundle\" or \"submit\" command. (C/C++ only)",
                         "default": true
                     },
                     "oj-ext.eraseLineDirectives": {
                         "type": "boolean",
-                        "description": "Controls whether to erase `#line` directives in \"bundle\" or \"submit\" command. (C/C++ only)",
+                        "markdownDescription": "Controls whether to erase `#line` directives in \"bundle\" or \"submit\" command. (C/C++ only)",
                         "default": true
+                    },
+                    "oj-ext.bundledFileDestination": {
+                        "type": "string",
+                        "markdownDescription": "Specify the path of the destination of bundled files. If this is `clipboard`, The code will be copied to the clipboard.",
+                        "default": "clipboard"
                     },
                     "oj-ext.openBrowser": {
                         "type": "boolean",

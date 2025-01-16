@@ -13,11 +13,11 @@ export function erase_line_directives(code: string) {
     return code.replaceAll(/#line\s\d+(\sR?".*")?/g, "");
 }
 
-export async function bundle_code(target: vscode.Uri) {
+export async function bundle_code(target_file: string) {
     const config_include_path = get_config_checking<string[]>("includePath");
     const config_hide_path = get_config_checking<boolean>("hidePath");
     const config_erase_line_directives = get_config_checking<boolean>("eraseLineDirectives");
-    const { error, stdout, stderr } = await async_exec(`cd ${path.dirname(target.fsPath)} && oj-bundle ${target.fsPath}${config_include_path.map((value) => " -I " + value).join("")}`);
+    const { error, stdout, stderr } = await async_exec(`cd ${path.dirname(target_file)} && oj-bundle ${target_file}${config_include_path.map((value) => " -I " + value).join("")}`);
     if (stderr !== "") {
         console.error(stderr);
     }
@@ -41,7 +41,7 @@ export const bundle_command = vscode.commands.registerCommand("online-judge-exte
                 return new Promise(async (resolve, reject) => {
                     try {
                         progress.report({ message: "Bundling..." });
-                        let bundled = await bundle_code(target_file);
+                        let bundled = await bundle_code(target_file.fsPath);
                         progress.report({ message: "Formatting..." });
                         bundled = await format_code(path.dirname(target_file.fsPath), bundled);
                         progress.report({ message: "Copying..." });

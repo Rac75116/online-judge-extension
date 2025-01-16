@@ -1,8 +1,6 @@
 import * as vscode from "vscode";
-import * as fs from "node:fs";
 import * as path from "node:path";
-import * as crypto from "node:crypto";
-import { get_config_checking } from "./global";
+import { get_config_checking, random_id } from "./global";
 
 const styles: { [key: string]: string } = {
     Compress: `---
@@ -153,17 +151,13 @@ export async function format_code(dirpath: string, source_code: string) {
     if (format_style === "Never") {
         return source_code;
     }
-    const elements = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    const rndname = Array.from(crypto.randomFillSync(new Uint8Array(32)))
-        .map((n) => elements[n % elements.length])
-        .join("");
-    const working_dir = path.join(dirpath, `/${rndname}`);
-    await fs.promises.mkdir(path.join(working_dir, "/.vscode"), { recursive: true });
+    const working_dir = path.join(dirpath, `/.${random_id(32)}`);
+    await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(working_dir, "/.vscode")));
     const promises = [];
-    promises.push(fs.promises.writeFile(path.join(working_dir, "/formatted.cpp"), source_code, "utf-8"));
-    promises.push(fs.promises.writeFile(path.join(working_dir, "/.vscode/settings.json"), '{"editor.defaultFormatter": "ms-vscode.cpptools","C_Cpp.clang_format_style": "file"}', "utf-8"));
+    promises.push(vscode.workspace.fs.writeFile(vscode.Uri.file(path.join(working_dir, "/formatted.cpp")), new TextEncoder().encode(source_code)));
+    promises.push(vscode.workspace.fs.writeFile(vscode.Uri.file(path.join(working_dir, "/.vscode/settings.json")), new TextEncoder().encode('{"editor.defaultFormatter": "ms-vscode.cpptools","C_Cpp.clang_format_style": "file"}')));
     if (format_style !== "Inherit") {
-        promises.push(fs.promises.writeFile(path.join(working_dir, "/.clang-format"), styles[format_style], "utf-8"));
+        promises.push(vscode.workspace.fs.writeFile(vscode.Uri.file(path.join(working_dir, "/.clang-format")), new TextEncoder().encode(styles[format_style])));
     }
     await Promise.all(promises);
     try {
@@ -183,7 +177,7 @@ export async function format_code(dirpath: string, source_code: string) {
     } catch {
         vscode.window.showWarningMessage("format: Failed to format the code, continue with the original code.");
     }
-    const result = await fs.promises.readFile(path.join(working_dir, "/formatted.cpp"), "utf-8");
-    await fs.promises.rm(working_dir, { recursive: true });
+    const result = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(path.join(working_dir, "/formatted.cpp"))));
+    await vscode.workspace.fs.delete(vscode.Uri.file(working_dir), { recursive: true });
     return "/* This code was formatted by `clang-format` and `online-judge-extension`. */\n" + result;
 }

@@ -61,14 +61,13 @@ export async function login_service(service: number, use_selenium: boolean) {
 
 export const login_command = vscode.commands.registerCommand("online-judge-extension.login", async () => {
     await catch_error("login", async () => {
-        const info: any = await Promise.all([check_oj_version(), has_selenium()]);
-        if (!info[0]) {
-            return;
-        }
+        await check_oj_version();
+
+        const selenium = await has_selenium();
         const service = await select_service([services.Atcoder, /* services.Codeforces, */ services.HackerRank, services.Toph, services.yukicoder]);
         if (service === undefined) {
             return;
         }
-        await login_service(service, info[1]);
+        await login_service(service, selenium);
     });
 });

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
+import * as crypto from "node:crypto";
 import * as childProcess from "node:child_process";
 
 export const services: { [name: string]: number } = {
@@ -136,4 +137,11 @@ export async function catch_error(title: string, callback: () => void) {
     } catch (error: any) {
         vscode.window.showErrorMessage(`${title}: ${error.message}`);
     }
+}
+
+export function random_id(len: number) {
+    const elements = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    return Array.from(crypto.randomFillSync(new Uint8Array(len)))
+        .map((n) => elements[n % elements.length])
+        .join("");
 }
