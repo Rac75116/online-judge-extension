@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
-import { services, service_url, async_exec, select_service } from "./global";
+import { services, service_url, async_exec, select_service, catch_error } from "./global";
 import { has_selenium, check_oj_version } from "./checker";
 
-export async function login_service(service: number, use_selenium: boolean | any) {
+export async function login_service(service: number, use_selenium: boolean) {
     const url = service_url[service];
     const { error, stdout, stderr } = await async_exec(`oj login --check ${url}`);
     if (stdout !== "") {
@@ -12,7 +12,7 @@ export async function login_service(service: number, use_selenium: boolean | any
         console.error(stderr);
     }
     if (!error) {
-        vscode.window.showInformationMessage("You have already signed in.");
+        vscode.window.showInformationMessage("login: You have already signed in.");
         return;
     }
     if (use_selenium) {
@@ -40,7 +40,7 @@ export async function login_service(service: number, use_selenium: boolean | any
                         return;
                     }
                     resolve(null);
-                    vscode.window.showInformationMessage("Signed in successfully.");
+                    vscode.window.showInformationMessage("login: Signed in successfully.");
                 });
             }
         );
@@ -73,18 +73,20 @@ export async function login_service(service: number, use_selenium: boolean | any
                 throw new Error("Something went wrong.");
             }
         }
-        vscode.window.showInformationMessage("Signed in successfully.");
+        vscode.window.showInformationMessage("login: Signed in successfully.");
     }
 }
 
 export const login_command = vscode.commands.registerCommand("online-judge-extension.login", async () => {
-    const info = await Promise.all([check_oj_version(), has_selenium()]);
-    if (!info[0]) {
-        return;
-    }
-    const service = await select_service([services.Atcoder, /* services.Codeforces, */ services.HackerRank, services.Toph /*, services.yukicoder*/]);
-    if (service === undefined) {
-        return;
-    }
-    await login_service(service, info[1]);
+    await catch_error("login", async () => {
+        const info: any = await Promise.all([check_oj_version(), has_selenium()]);
+        if (!info[0]) {
+            return;
+        }
+        const service = await select_service([services.Atcoder, /* services.Codeforces, */ services.HackerRank, services.Toph, services.yukicoder]);
+        if (service === undefined) {
+            return;
+        }
+        await login_service(service, info[1]);
+    });
 });

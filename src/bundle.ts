@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
 import * as copyPaste from "copy-paste";
-import { get_config_checking, async_exec } from "./global";
+import { get_config_checking, async_exec, catch_error } from "./global";
 import { check_oj_verify_version } from "./checker";
 import { format_code } from "./format";
 
@@ -28,33 +28,33 @@ export async function bundle_code(target: vscode.Uri) {
 }
 
 export const bundle_command = vscode.commands.registerCommand("online-judge-extension.bundle", async (target_file: vscode.Uri) => {
-    if (!(await check_oj_verify_version())) {
-        return;
-    }
+    await catch_error("bundle", async () => {
+        await check_oj_verify_version();
 
-    await vscode.window.withProgress(
-        {
-            title: `Bundling ${path.basename(target_file.fsPath)}`,
-            location: vscode.ProgressLocation.Notification,
-            cancellable: false,
-        },
-        async (progress) => {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    progress.report({ message: "Bundling..." });
-                    let bundled = await bundle_code(target_file);
-                    progress.report({ message: "Formatting..." });
-                    bundled = await format_code(path.dirname(target_file.fsPath), bundled);
-                    progress.report({ message: "Copying..." });
-                    copyPaste.copy(bundled, () => {
-                        progress.report({ message: "Copied to clipboard." });
-                        setTimeout(() => resolve(null), 2500);
-                    });
-                } catch (error) {
-                    reject(error);
-                    return;
-                }
-            });
-        }
-    );
+        await vscode.window.withProgress(
+            {
+                title: `Bundling ${path.basename(target_file.fsPath)}`,
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+            },
+            async (progress) => {
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        progress.report({ message: "Bundling..." });
+                        let bundled = await bundle_code(target_file);
+                        progress.report({ message: "Formatting..." });
+                        bundled = await format_code(path.dirname(target_file.fsPath), bundled);
+                        progress.report({ message: "Copying..." });
+                        copyPaste.copy(bundled, () => {
+                            progress.report({ message: "Copied to clipboard." });
+                            setTimeout(() => resolve(null), 2500);
+                        });
+                    } catch (error) {
+                        reject(error);
+                        return;
+                    }
+                });
+            }
+        );
+    });
 });

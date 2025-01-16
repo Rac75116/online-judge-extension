@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { check_oj_api_version } from "./checker";
-import { select_service, services, service_url, async_exec, make_file_folder_name, get_template } from "./global";
+import { select_service, services, service_url, async_exec, make_file_folder_name, get_template, catch_error } from "./global";
 
 export async function get_contest_data(service: number, contest_id: string) {
     let contest_url = service_url[service];
@@ -155,49 +155,49 @@ export async function get_contest_data(service: number, contest_id: string) {
 }
 
 export const createdir_command = vscode.commands.registerCommand("online-judge-extension.createdir", async (target_directory: vscode.Uri) => {
-    if (!(await check_oj_api_version())) {
-        return;
-    }
+    await catch_error("createdir", async () => {
+        await check_oj_api_version();
 
-    const template = await get_template();
-    if (template === undefined) {
-        return;
-    }
-    const [template_uri, file_or_command] = template;
-
-    const service = await select_service([services.Atcoder, services.Atcoder_Problems, services.CodeChef, services.Codeforces, services.yukicoder]);
-    if (service === undefined) {
-        return;
-    }
-    const contest_id = await vscode.window.showInputBox({
-        ignoreFocusOut: true,
-        placeHolder: "ex) abc001",
-        prompt: "Enter the contest id.",
-    });
-    if (contest_id === undefined || contest_id === "") {
-        return;
-    }
-
-    const { contest, dirname, stat } = await get_contest_data(service, contest_id);
-    if (stat === undefined) {
-        return;
-    }
-    if (service === services.Atcoder) {
-        contest.result.problems = contest.result.problems.filter((problem: any) => !("alphabet" in problem.context && problem.context.alphabet === "A-Final"));
-    }
-    const dir = vscode.Uri.joinPath(target_directory, dirname);
-    vscode.workspace.fs.createDirectory(dir);
-    vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir, "contest.oj-ext.json"), new TextEncoder().encode(JSON.stringify(contest, null, 4)));
-    contest.result.problems.forEach(async (problem: any, index: number) => {
-        problem.status = stat;
-        const dir2 = vscode.Uri.joinPath(dir, "alphabet" in problem.context ? problem.context.alphabet : String(index) + " " + problem.name);
-        await vscode.workspace.fs.createDirectory(dir2);
-        vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir2, "problem.oj-ext.json"), new TextEncoder().encode(JSON.stringify(problem, null, 4)));
-        const file = vscode.Uri.joinPath(dir2, file_or_command);
-        if (template_uri === undefined) {
-            vscode.workspace.fs.writeFile(file, new Uint8Array());
-        } else {
-            vscode.workspace.fs.copy(template_uri, file);
+        const template = await get_template();
+        if (template === undefined) {
+            return;
         }
+        const [template_uri, file_or_command] = template;
+
+        const service = await select_service([services.Atcoder, services.Atcoder_Problems, services.CodeChef, services.Codeforces, services.yukicoder]);
+        if (service === undefined) {
+            return;
+        }
+        const contest_id = await vscode.window.showInputBox({
+            ignoreFocusOut: true,
+            placeHolder: "ex) abc001",
+            prompt: "Enter the contest id.",
+        });
+        if (contest_id === undefined || contest_id === "") {
+            return;
+        }
+
+        const { contest, dirname, stat } = await get_contest_data(service, contest_id);
+        if (stat === undefined) {
+            return;
+        }
+        if (service === services.Atcoder) {
+            contest.result.problems = contest.result.problems.filter((problem: any) => !("alphabet" in problem.context && problem.context.alphabet === "A-Final"));
+        }
+        const dir = vscode.Uri.joinPath(target_directory, dirname);
+        vscode.workspace.fs.createDirectory(dir);
+        vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir, "contest.oj-ext.json"), new TextEncoder().encode(JSON.stringify(contest, null, 4)));
+        contest.result.problems.forEach(async (problem: any, index: number) => {
+            problem.status = stat;
+            const dir2 = vscode.Uri.joinPath(dir, "alphabet" in problem.context ? problem.context.alphabet : String(index) + " " + problem.name);
+            await vscode.workspace.fs.createDirectory(dir2);
+            vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir2, "problem.oj-ext.json"), new TextEncoder().encode(JSON.stringify(problem, null, 4)));
+            const file = vscode.Uri.joinPath(dir2, file_or_command);
+            if (template_uri === undefined) {
+                vscode.workspace.fs.writeFile(file, new Uint8Array());
+            } else {
+                vscode.workspace.fs.copy(template_uri, file);
+            }
+        });
     });
 });

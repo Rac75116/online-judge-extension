@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import * as fs from "node:fs";
-import { async_exec } from "./global";
+import { async_exec, catch_error } from "./global";
 
 export async function remove_cookie() {
     const { error, stdout, stderr } = await async_exec(`oj -h`);
@@ -23,10 +23,12 @@ export async function remove_cookie() {
 }
 
 export const logout_command = vscode.commands.registerCommand("online-judge-extension.logout", async () => {
-    const selection = await vscode.window.showInformationMessage("This command signs you out of the all services. Are you sure?", "continue", "cancel");
-    if (selection !== "continue") {
-        return;
-    }
-    await remove_cookie();
-    vscode.window.showInformationMessage("Signed out successfully.");
+    await catch_error("logout", async () => {
+        const selection = await vscode.window.showInformationMessage("logout: This command signs you out of the all services. Are you sure?", "continue", "cancel");
+        if (selection !== "continue") {
+            return;
+        }
+        await remove_cookie();
+        vscode.window.showInformationMessage("logout: Signed out successfully.");
+    });
 });

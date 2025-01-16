@@ -121,3 +121,11 @@ export async function get_template(): Promise<[vscode.Uri | undefined, string]> 
     }
     return [template_uri, file_or_command];
 }
+
+export async function catch_error(title: string, callback: () => void) {
+    try {
+        await callback();
+    } catch (error: any) {
+        vscode.window.showErrorMessage(`${title}: ${error.message}`);
+    }
+}

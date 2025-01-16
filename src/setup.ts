@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { check_py_version } from "./checker";
-import { async_exec } from "./global";
+import { async_exec, catch_error } from "./global";
 
 export async function setup(reporter: (increment: number) => void) {
     const sleep = (msec: number) => new Promise((resolve) => setTimeout(resolve, msec));
@@ -38,29 +38,30 @@ export async function setup(reporter: (increment: number) => void) {
 }
 
 export const setup_command = vscode.commands.registerCommand("online-judge-extension.setup", async () => {
-    if (!(await check_py_version())) {
-        return;
-    }
-    await vscode.window.withProgress(
-        {
-            title: `Setup`,
-            location: vscode.ProgressLocation.Notification,
-            cancellable: false,
-        },
-        async (progress) => {
-            return new Promise(async (resolve, reject) => {
-                progress.report({ message: "Installing...", increment: 0 });
-                try {
-                    await setup((increment) => {
-                        progress.report({ message: "Installing...", increment: increment });
-                    });
-                } catch (error) {
-                    reject(error);
-                    return;
-                }
-                progress.report({ message: "Everything needed is now installed." });
-                setTimeout(() => resolve(null), 5000);
-            });
-        }
-    );
+    await catch_error("setup", async () => {
+        await check_py_version();
+
+        await vscode.window.withProgress(
+            {
+                title: `Setup`,
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+            },
+            async (progress) => {
+                return new Promise(async (resolve, reject) => {
+                    progress.report({ message: "Installing...", increment: 0 });
+                    try {
+                        await setup((increment) => {
+                            progress.report({ message: "Installing...", increment: increment });
+                        });
+                    } catch (error) {
+                        reject(error);
+                        return;
+                    }
+                    progress.report({ message: "Everything needed is now installed." });
+                    setTimeout(() => resolve(null), 5000);
+                });
+            }
+        );
+    });
 });

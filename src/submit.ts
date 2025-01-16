@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
 import { check_oj_version } from "./checker";
-import { get_config_checking, async_exec } from "./global";
+import { get_config_checking, async_exec, catch_error } from "./global";
 import { bundle_code, erase_line_directives, hide_filepath } from "./bundle";
 import { format_code } from "./format";
 
@@ -66,38 +66,38 @@ export async function submit_code(target: vscode.Uri, problem: string, reporter:
 }
 
 export const submit_command = vscode.commands.registerCommand("online-judge-extension.submit", async (target_file: vscode.Uri) => {
-    if (!(await check_oj_version())) {
-        return;
-    }
+    await catch_error("submit", async () => {
+        await check_oj_version();
 
-    const problem_url = await vscode.window.showInputBox({
-        ignoreFocusOut: true,
-        placeHolder: "e.g. https://codeforces.com/contest/1606/problem/A",
-        prompt: "Enter the problem url.",
-    });
-    if (problem_url === undefined) {
-        return;
-    }
-    await vscode.window.withProgress(
-        {
-            title: `Submit`,
-            location: vscode.ProgressLocation.Notification,
-            cancellable: false,
-        },
-        async (progress) => {
-            return new Promise(async (resolve, reject) => {
-                progress.report({ message: "Waiting..." });
-                try {
-                    await submit_code(target_file, problem_url, (message) => {
-                        progress.report({ message: message });
-                    });
-                } catch (error) {
-                    reject(error);
-                    return;
-                }
-                progress.report({ message: "Successfully submitted." });
-                setTimeout(() => resolve(null), 2500);
-            });
+        const problem_url = await vscode.window.showInputBox({
+            ignoreFocusOut: true,
+            placeHolder: "e.g. https://codeforces.com/contest/1606/problem/A",
+            prompt: "Enter the problem url.",
+        });
+        if (problem_url === undefined) {
+            return;
         }
-    );
+        await vscode.window.withProgress(
+            {
+                title: `Submit`,
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+            },
+            async (progress) => {
+                return new Promise(async (resolve, reject) => {
+                    progress.report({ message: "Waiting..." });
+                    try {
+                        await submit_code(target_file, problem_url, (message) => {
+                            progress.report({ message: message });
+                        });
+                    } catch (error) {
+                        reject(error);
+                        return;
+                    }
+                    progress.report({ message: "Successfully submitted." });
+                    setTimeout(() => resolve(null), 2500);
+                });
+            }
+        );
+    });
 });

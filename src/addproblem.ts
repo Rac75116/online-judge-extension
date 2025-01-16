@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 import { check_oj_api_version } from "./checker";
-import { get_template, file_exists, make_file_folder_name, async_exec } from "./global";
+import { get_template, file_exists, make_file_folder_name, async_exec, catch_error } from "./global";
 
 export async function get_problem_data(url: string) {
     if (url.includes("judge.yosupo.jp")) {
-        vscode.window.showInformationMessage("Please wait a moment...");
+        vscode.window.showInformationMessage("addproblem: Please wait a moment...");
     }
     const { error, stdout, stderr } = await async_exec(`oj-api --wait=0.0 get-problem ${url}`);
     if (stdout !== "") {
@@ -40,32 +40,31 @@ export async function get_problem_data(url: string) {
 }
 
 export const addproblem_command = vscode.commands.registerCommand("online-judge-extension.addproblem", async (target_directory: vscode.Uri) => {
-    if (!(await check_oj_api_version())) {
-        return;
-    }
+    await catch_error("addproblem", async () => {
+        await check_oj_api_version();
 
-    const [template_uri, file_or_command] = await get_template();
-    if (await file_exists(vscode.Uri.joinPath(target_directory, "contest.oj-ext.json"))) {
-        vscode.window.showErrorMessage("Something went wrong.");
-        return;
-    }
+        const [template_uri, file_or_command] = await get_template();
+        if (await file_exists(vscode.Uri.joinPath(target_directory, "contest.oj-ext.json"))) {
+            throw new Error("contest.oj-ext.json not found.");
+        }
 
-    const problem_url = await vscode.window.showInputBox({
-        ignoreFocusOut: true,
-        placeHolder: "ex) https://codeforces.com/contest/1606/problem/A",
-        prompt: "Enter the problem url.",
+        const problem_url = await vscode.window.showInputBox({
+            ignoreFocusOut: true,
+            placeHolder: "ex) https://codeforces.com/contest/1606/problem/A",
+            prompt: "Enter the problem url.",
+        });
+        if (problem_url === undefined || problem_url === "") {
+            return;
+        }
+        const { problem, name } = await get_problem_data(problem_url);
+        const dir = vscode.Uri.joinPath(target_directory, make_file_folder_name(name));
+        await vscode.workspace.fs.createDirectory(dir);
+        vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir, "problem.oj-ext.json"), new TextEncoder().encode(JSON.stringify(problem, null, 4)));
+        const file = vscode.Uri.joinPath(dir, file_or_command);
+        if (template_uri === undefined) {
+            vscode.workspace.fs.writeFile(file, new Uint8Array());
+        } else {
+            vscode.workspace.fs.copy(template_uri, file);
+        }
     });
-    if (problem_url === undefined || problem_url === "") {
-        return;
-    }
-    const { problem, name } = await get_problem_data(problem_url);
-    const dir = vscode.Uri.joinPath(target_directory, make_file_folder_name(name));
-    await vscode.workspace.fs.createDirectory(dir);
-    vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir, "problem.oj-ext.json"), new TextEncoder().encode(JSON.stringify(problem, null, 4)));
-    const file = vscode.Uri.joinPath(dir, file_or_command);
-    if (template_uri === undefined) {
-        vscode.workspace.fs.writeFile(file, new Uint8Array());
-    } else {
-        vscode.workspace.fs.copy(template_uri, file);
-    }
 });
