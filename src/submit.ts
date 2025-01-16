@@ -52,14 +52,8 @@ export async function submit_code(target: vscode.Uri, problem: string, reporter:
         }
     }
     reporter("Submitting...");
-    const { error, stdout, stderr } = await async_exec(`oj submit --wait 0 --yes ${cxx_latest} ${cxx_compiler} ${py_version} ${py_interpreter} ${open_brower} ${problem} ${target.fsPath}`);
+    const { error, stdout, stderr } = await async_exec(`oj submit --wait 0 --yes ${cxx_latest} ${cxx_compiler} ${py_version} ${py_interpreter} ${open_brower} ${problem} ${target.fsPath}`, true);
     vscode.workspace.fs.delete(target);
-    if (stdout !== "") {
-        console.log(stdout);
-    }
-    if (stderr !== "") {
-        console.error(stderr);
-    }
     if (error) {
         throw new Error("Something went wrong.");
     }

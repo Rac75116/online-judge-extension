@@ -58,10 +58,18 @@ export const service_url: { [service: number]: string } = {
 } as const;
 
 type async_exec_result_t = { error: childProcess.ExecException | null; stdout: string; stderr: string };
-export function async_exec(command: string): Promise<async_exec_result_t> {
+export function async_exec(command: string, print_log: boolean = false): Promise<async_exec_result_t> {
     return new Promise((resolve) => {
         console.log("Execute: " + command);
         childProcess.exec(command, (error, stdout, stderr) => {
+            if (print_log) {
+                if (stdout !== "") {
+                    console.log(stdout);
+                }
+                if (stderr !== "") {
+                    console.error(stderr);
+                }
+            }
             resolve({ error: error, stdout: stdout, stderr: stderr });
         });
     });

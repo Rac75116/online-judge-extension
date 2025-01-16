@@ -4,13 +4,7 @@ import { has_selenium, check_oj_version } from "./checker";
 
 export async function login_service(service: number, use_selenium: boolean) {
     const url = service_url[service];
-    const { error, stdout, stderr } = await async_exec(`oj login --check ${url}`);
-    if (stdout !== "") {
-        console.log(stdout);
-    }
-    if (stderr !== "") {
-        console.error(stderr);
-    }
+    const { error, stdout, stderr } = await async_exec(`oj login --check ${url}`, true);
     if (!error) {
         vscode.window.showInformationMessage("login: You have already signed in.");
         return;
@@ -27,14 +21,8 @@ export async function login_service(service: number, use_selenium: boolean) {
                     progress.report({ message: "Prease wait a moment..." });
                     let ended = false;
                     setTimeout(() => !ended && progress.report({ message: "The process ends automatically when the window is closed." }), 3000);
-                    const { error, stdout, stderr } = await async_exec(`oj login --use-browser always ${url}`);
+                    const { error, stdout, stderr } = await async_exec(`oj login --use-browser always ${url}`, true);
                     ended = true;
-                    if (stdout !== "") {
-                        console.log(stdout);
-                    }
-                    if (stderr !== "") {
-                        console.error(stderr);
-                    }
                     if (error) {
                         reject(new Error(stdout.includes("[FAILURE] You are not signed in.") ? "You are not signed in." : "Something went wrong."));
                         return;
@@ -57,13 +45,7 @@ export async function login_service(service: number, use_selenium: boolean) {
             password: true,
             prompt: "Enter your password.",
         });
-        const { error, stdout, stderr } = await async_exec(`oj login -u ${user} -p ${pass} --use-browser never ${url}`);
-        if (stdout !== "") {
-            console.log(stdout);
-        }
-        if (stderr !== "") {
-            console.error(stderr);
-        }
+        const { error, stdout, stderr } = await async_exec(`oj login -u ${user} -p ${pass} --use-browser never ${url}`, true);
         if (error) {
             if (stdout.includes("Username or Password is incorrect.")) {
                 throw new Error("Username or Password is incorrect.");

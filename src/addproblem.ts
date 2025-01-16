@@ -6,13 +6,7 @@ export async function get_problem_data(url: string) {
     if (url.includes("judge.yosupo.jp")) {
         vscode.window.showInformationMessage("addproblem: Please wait a moment...");
     }
-    const { error, stdout, stderr } = await async_exec(`oj-api --wait=0.0 get-problem ${url}`);
-    if (stdout !== "") {
-        console.log(stdout);
-    }
-    if (stderr !== "") {
-        console.error(stderr);
-    }
+    const { error, stdout, stderr } = await async_exec(`oj-api --wait=0.0 get-problem ${url}`, true);
     if (error) {
         throw new Error("Something went wrong.");
     }

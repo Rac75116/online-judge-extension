@@ -13,16 +13,10 @@ export async function get_contest_data(service: number, contest_id: string) {
     } else if (service === services.Codeforces) {
         contest_url += `contest/${contest_id}/`;
     }
-    const { error, stdout, stderr } = await async_exec(`oj-api --wait=0.0 get-contest ${contest_url}`);
-    if (stdout !== "") {
-        console.log(stdout);
-    }
-    if (stderr !== "") {
-        console.error(stderr);
-    }
+    const { error, stdout, stderr } = await async_exec(`oj-api --wait=0.0 get-contest ${contest_url}`, true);
 
     let contest = JSON.parse(stdout);
-    if (contest.status === "ok") {
+    if (contest?.status === "ok") {
         return { contest: contest, dirname: make_file_folder_name(contest.result.name), stat: "summary" };
     } else if (service === services.Atcoder) {
         let n = 0;

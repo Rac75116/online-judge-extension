@@ -22,13 +22,7 @@ export async function setup(reporter: (increment: number) => void) {
         "oj-bundle -h",
     ];
     for (const command of commands) {
-        const { error, stdout, stderr } = await async_exec(command);
-        if (stdout !== "") {
-            console.log(stdout);
-        }
-        if (stderr !== "") {
-            console.error(stderr);
-        }
+        const { error, stdout, stderr } = await async_exec(command, true);
         if (error) {
             throw new Error("Something went wrong during the installation.");
         }
