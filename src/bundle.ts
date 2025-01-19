@@ -2,8 +2,9 @@ import * as vscode from "vscode";
 import * as path from "node:path";
 import * as copyPaste from "copy-paste";
 import { get_config_checking, async_exec, catch_error } from "./global";
-import { check_oj_verify_version } from "./checker";
+import { check_oj_verify_version, check_py_version } from "./checker";
 import { format_code } from "./format";
+import { UnknownError } from "./error";
 
 export function hide_filepath(code: string) {
     return code.replaceAll(/#line\s(\d+)\sR?".*"/g, "#line $1");
@@ -22,13 +23,14 @@ export async function bundle_code(target_file: string) {
         console.error(stderr);
     }
     if (error) {
-        throw new Error("Failed to bundle the file.");
+        throw new UnknownError("Something went wrong.");
     }
     return "/* This code was bundled by `oj-bundle` and `online-judge-extension`. */\n" + (config_erase_line_directives ? erase_line_directives(stdout) : config_hide_path ? hide_filepath(stdout) : stdout);
 }
 
-export const bundle_command = vscode.commands.registerCommand("online-judge-extension.bundle", async (target_file: vscode.Uri) => {
+export const bundle_command = vscode.commands.registerCommand("oj-ext.bundle", async (target_file: vscode.Uri) => {
     await catch_error("bundle", async () => {
+        await check_py_version();
         await check_oj_verify_version();
 
         await vscode.window.withProgress(

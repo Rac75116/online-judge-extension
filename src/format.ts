@@ -175,7 +175,7 @@ export async function format_code(dirpath: string, source_code: string) {
             }
         }
     } catch {
-        vscode.window.showWarningMessage("format: Failed to format the code, continue with the original code.");
+        vscode.window.showWarningMessage("oj-ext: Failed to format the code, continue with the original code.");
     }
     const result = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(path.join(working_dir, "/formatted.cpp"))));
     await vscode.workspace.fs.delete(vscode.Uri.file(working_dir), { recursive: true });

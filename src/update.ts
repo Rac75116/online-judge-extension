@@ -1,11 +1,13 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import { check_oj_api_version } from "./checker";
+import { check_oj_api_version, check_py_version } from "./checker";
 import { file_exists, get_template, service_url, services, catch_error } from "./global";
 import { get_contest_data } from "./createdir";
+import { KnownError, UnknownError } from "./error";
 
-export const update_command = vscode.commands.registerCommand("online-judge-extension.update", async (target_directory: vscode.Uri) => {
+export const update_command = vscode.commands.registerCommand("oj-ext.update", async (target_directory: vscode.Uri) => {
     await catch_error("update", async () => {
+        await check_py_version();
         await check_oj_api_version();
 
         if (await file_exists(vscode.Uri.joinPath(target_directory, "contest.oj-ext.json"))) {
@@ -19,7 +21,7 @@ export const update_command = vscode.commands.registerCommand("online-judge-exte
             const service: number = Number(Object.keys(service_url).find((value) => url.startsWith(service_url[Number(value)])));
             const contest_id = url.split("/").at(-1);
             if (contest_id === undefined) {
-                throw new Error("Faild to extract contest id from url.");
+                throw new KnownError("Faild to extract contest id from url.");
             }
 
             const { contest, dirname, stat } = await get_contest_data(service, contest_id);
@@ -58,7 +60,7 @@ export const update_command = vscode.commands.registerCommand("online-judge-exte
             const url: string = JSON.parse((await vscode.workspace.fs.readFile(vscode.Uri.joinPath(target_directory, "problem.oj-ext.json"))).toString()).result.url;
             // TODO
         } else {
-            throw new Error("Something went wrong.");
+            throw new UnknownError("Something went wrong.");
         }
     });
 });

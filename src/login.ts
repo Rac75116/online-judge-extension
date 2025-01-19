@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { services, service_url, async_exec, select_service, catch_error } from "./global";
-import { has_selenium, check_oj_version } from "./checker";
+import { has_selenium, check_oj_version, check_py_version } from "./checker";
+import { EnvironmentError, KnownError, UnknownError } from "./error";
 
 export async function login_service(service: number, use_selenium: boolean) {
     const url = service_url[service];
@@ -24,7 +25,11 @@ export async function login_service(service: number, use_selenium: boolean) {
                     const { error, stdout, stderr } = await async_exec(`oj login --use-browser always ${url}`, true);
                     ended = true;
                     if (error) {
-                        reject(new Error(stdout.includes("[FAILURE] You are not signed in.") ? "You are not signed in." : "Something went wrong."));
+                        if (stdout.includes("[FAILURE] You are not signed in.")) {
+                            reject(new KnownError("You are not signed in."));
+                        } else {
+                            reject(new UnknownError("Something went wrong."));
+                        }
                         return;
                     }
                     resolve(null);
@@ -34,7 +39,7 @@ export async function login_service(service: number, use_selenium: boolean) {
         );
     } else {
         if (service !== services.AtCoder) {
-            throw new Error('Cannot sign in because Selenium is not installed. Run "pip3 install selenium".');
+            throw new EnvironmentError("Cannot sign in because Selenium is not installed.");
         }
         const user = await vscode.window.showInputBox({
             ignoreFocusOut: true,
@@ -48,19 +53,20 @@ export async function login_service(service: number, use_selenium: boolean) {
         const { error, stdout, stderr } = await async_exec(`oj login -u ${user} -p ${pass} --use-browser never ${url}`, true);
         if (error) {
             if (stdout.includes("Username or Password is incorrect.")) {
-                throw new Error("Username or Password is incorrect.");
+                throw new KnownError("Username or Password is incorrect.");
             } else if (stdout.includes("Invalid handle or password.")) {
-                throw new Error("Invalid handle or password.");
+                throw new KnownError("Invalid handle or password.");
             } else {
-                throw new Error("Something went wrong.");
+                throw new UnknownError("Something went wrong.");
             }
         }
         vscode.window.showInformationMessage("login: Signed in successfully.");
     }
 }
 
-export const login_command = vscode.commands.registerCommand("online-judge-extension.login", async () => {
+export const login_command = vscode.commands.registerCommand("oj-ext.login", async () => {
     await catch_error("login", async () => {
+        await check_py_version();
         await check_oj_version();
 
         const selenium = await has_selenium();

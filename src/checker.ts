@@ -1,3 +1,4 @@
+import { EnvironmentError, KnownError, PythonNotInstalledError } from "./error";
 import { async_exec } from "./global";
 
 const py_version = [3, 8];
@@ -25,17 +26,17 @@ export async function check_py_version() {
     }
     const { error, stdout, stderr } = await async_exec("pip3 --version", true);
     if (error) {
-        throw new Error("Please install Python.");
+        throw new PythonNotInstalledError("Python is not installed.");
     }
     const version = stdout
         .match(/python (\d+)\.(\d+)/)
         ?.slice(1)
         .map(Number);
     if (py_version.length !== version?.length) {
-        throw new Error("Failed to extract a version of Python.");
+        throw new KnownError("Failed to extract a version of Python.");
     }
     if (!satisfy_version(py_version, version)) {
-        throw new Error(`"Online Judge Extension" requires python ${py_version[0]}.${py_version[1]} or higher.`);
+        throw new PythonNotInstalledError(`oj-ext requires python ${py_version[0]}.${py_version[1]} or higher.`);
     }
     checked_py_version = true;
 }
@@ -47,17 +48,17 @@ export async function check_oj_version() {
     }
     const { error, stdout, stderr } = await async_exec("pip3 show online-judge-tools", true);
     if (error) {
-        throw new Error("Please install online-judge-tools.");
+        throw new EnvironmentError("online-judge-tools is not installed.");
     }
     const version = stdout
         .match(/Version: (\d+)\.(\d+)\.(\d+)/)
         ?.slice(1)
         .map(Number);
     if (oj_version.length !== version?.length) {
-        throw new Error("Failed to extract a version of online-judge-tools.");
+        throw new KnownError("Failed to extract a version of online-judge-tools.");
     }
     if (!satisfy_version(oj_version, version)) {
-        throw new Error(`This extension requires online-judge-tools ${oj_version[0]}.${oj_version[1]}.${oj_version[2]} or higher.`);
+        throw new EnvironmentError(`oj-ext requires online-judge-tools ${oj_version[0]}.${oj_version[1]}.${oj_version[2]} or higher.`);
     }
     checked_oj_version = true;
 }
@@ -69,17 +70,17 @@ export async function check_oj_api_version() {
     }
     const { error, stdout, stderr } = await async_exec("pip3 show online-judge-api-client", true);
     if (error) {
-        throw new Error("Please install online-judge-api-client.");
+        throw new EnvironmentError("online-judge-api-client is not installed.");
     }
     const version = stdout
         .match(/Version: (\d+)\.(\d+)\.(\d+)/)
         ?.slice(1)
         .map(Number);
     if (oj_api_version.length !== version?.length) {
-        throw new Error("Failed to extract a version of online-judge-api-client.");
+        throw new KnownError("Failed to extract a version of online-judge-api-client.");
     }
     if (!satisfy_version(oj_api_version, version)) {
-        throw new Error(`This extension requires online-judge-api-client ${oj_api_version[0]}.${oj_api_version[1]}.${oj_api_version[2]} or higher.`);
+        throw new EnvironmentError(`oj-ext requires online-judge-api-client ${oj_api_version[0]}.${oj_api_version[1]}.${oj_api_version[2]} or higher.`);
     }
     checked_oj_api_version = true;
 }
@@ -91,7 +92,7 @@ export async function check_oj_verify_version() {
     }
     const { error, stdout, stderr } = await async_exec("pip3 show online-judge-verify-helper", true);
     if (error) {
-        throw new Error("Please install online-judge-verify-helper.");
+        throw new EnvironmentError("online-judge-verify-helper is not installed.");
     }
     const version = stdout
         .match(/Version: (\d+)\.(\d+)\.(\d+)/)
@@ -99,10 +100,10 @@ export async function check_oj_verify_version() {
         .map(Number);
     if (oj_verify_version.length !== version?.length) {
         console.log(stdout.replace(/.*Version: (\d+)\.(\d+)\.(\d+).*/, "$1 $2 $3"));
-        throw new Error("Failed to extract a version of online-judge-verify-helper.");
+        throw new KnownError("Failed to extract a version of online-judge-verify-helper.");
     }
     if (!satisfy_version(oj_verify_version, version)) {
-        throw new Error(`This extension requires online-judge-verify-helper ${oj_verify_version[0]}.${oj_verify_version[1]}.${oj_verify_version[2]} or higher.`);
+        throw new EnvironmentError(`oj-ext requires online-judge-verify-helper ${oj_verify_version[0]}.${oj_verify_version[1]}.${oj_verify_version[2]} or higher.`);
     }
     checked_oj_verify_version = true;
 }

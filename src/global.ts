@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as path from "node:path";
 import * as crypto from "node:crypto";
 import * as childProcess from "node:child_process";
+import { KnownError } from "./error";
 
 export const services: { [name: string]: number } = {
     Aizu_Online_Judge: 1,
@@ -88,7 +89,7 @@ export async function file_exists(uri: vscode.Uri) {
 export function get_config_checking<type>(name: string) {
     const result = vscode.workspace.getConfiguration("oj-ext").get<type>(name);
     if (result === undefined) {
-        throw new Error(`Failed to get configuration: "Oj-ext: ${name}"`);
+        throw new KnownError(`Failed to get configuration: "oj-ext.${name}"`);
     }
     return result;
 }
@@ -119,11 +120,11 @@ export async function get_template(): Promise<[vscode.Uri | undefined, string]> 
         const ft = await file_exists(template_uri);
         if (ft !== vscode.FileType.File) {
             if (ft === vscode.FileType.Directory) {
-                throw new Error('"Template File" path is a directory, not a file.');
+                throw new KnownError('"Template File" path is a directory, not a file.');
             } else if (ft === vscode.FileType.SymbolicLink) {
-                throw new Error('"Template File" path is a symbolic link, not a file.');
+                throw new KnownError('"Template File" path is a symbolic link, not a file.');
             } else {
-                throw new Error('The file pointed to by "Template File" path does not exist.');
+                throw new KnownError('The file pointed to by "Template File" path does not exist.');
             }
         }
         file_or_command = path.basename(template_path);
@@ -135,7 +136,16 @@ export async function catch_error(title: string, callback: () => void) {
     try {
         await callback();
     } catch (error: any) {
-        vscode.window.showErrorMessage(`${title}: ${error.message}`);
+        if (error.name === "PythonNotInstalledError") {
+            vscode.window.showErrorMessage(`oj-ext.${title}: ${error.message} Please install it with a check for "Add Python3.xx to Path".`);
+        } else if (error.name === "EnvironmentError") {
+            const ret = await vscode.window.showErrorMessage(`oj-ext.${title}: ${error.message} Do you want to run the "setup" command?`, "OK", "cancel");
+            if (ret === "OK") {
+                await vscode.commands.executeCommand("oj-ext.setup");
+            }
+        } else {
+            vscode.window.showErrorMessage(`oj-ext.${title}: ${error.message}`);
+        }
     }
 }
 

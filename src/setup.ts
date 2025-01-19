@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { check_py_version } from "./checker";
 import { async_exec, catch_error } from "./global";
+import { UnknownError } from "./error";
 
 export async function setup(reporter: (increment: number) => void) {
     const sleep = (msec: number) => new Promise((resolve) => setTimeout(resolve, msec));
@@ -24,14 +25,14 @@ export async function setup(reporter: (increment: number) => void) {
     for (const command of commands) {
         const { error, stdout, stderr } = await async_exec(command, true);
         if (error) {
-            throw new Error("Something went wrong during the installation.");
+            throw new UnknownError("Something went wrong during the installation.");
         }
         reporter(100 / commands.length);
         await sleep(500);
     }
 }
 
-export const setup_command = vscode.commands.registerCommand("online-judge-extension.setup", async () => {
+export const setup_command = vscode.commands.registerCommand("oj-ext.setup", async () => {
     await catch_error("setup", async () => {
         await check_py_version();
 

@@ -1,6 +1,6 @@
 {
     "name": "online-judge-extension",
-    "displayName": "Online Judge Extension",
+    "displayName": "oj-ext",
     "description": "VSCode extension for online-judge-tools",
     "version": "0.0.1",
     "engines": {
@@ -14,36 +14,36 @@
     "contributes": {
         "commands": [
             {
-                "command": "online-judge-extension.setup",
+                "command": "oj-ext.setup",
                 "title": "Oj-ext: Install necessary tools"
             },
             {
-                "command": "online-judge-extension.createdir",
+                "command": "oj-ext.createdir",
                 "title": "Oj-ext: Create New Contest Directory"
             },
             {
-                "command": "online-judge-extension.login",
+                "command": "oj-ext.login",
                 "title": "Oj-ext: Sign in to the Service"
             },
             {
-                "command": "online-judge-extension.logout",
+                "command": "oj-ext.logout",
                 "title": "Oj-ext: Sign out of the Services"
             },
             {
-                "command": "online-judge-extension.update",
+                "command": "oj-ext.update",
                 "title": "Oj-ext: Update Information"
             },
             {
-                "command": "online-judge-extension.addproblem",
+                "command": "oj-ext.addproblem",
                 "title": "Oj-ext: Add Problem"
             },
             {
-                "command": "online-judge-extension.submit",
+                "command": "oj-ext.submit",
                 "title": "Oj-ext: Submit Code",
                 "icon": "$(cloud-upload)"
             },
             {
-                "command": "online-judge-extension.bundle",
+                "command": "oj-ext.bundle",
                 "title": "Oj-ext: Bundle C/C++ Headers",
                 "icon": "$(folder-library)"
             }
@@ -51,40 +51,40 @@
         "menus": {
             "commandPalette": [
                 {
-                    "command": "online-judge-extension.createdir",
+                    "command": "oj-ext.createdir",
                     "when": "editorHasSelection"
                 },
                 {
-                    "command": "online-judge-extension.update",
+                    "command": "oj-ext.update",
                     "when": "editorHasSelection"
                 },
                 {
-                    "command": "online-judge-extension.addproblem",
+                    "command": "oj-ext.addproblem",
                     "when": "editorHasSelection"
                 }
             ],
             "explorer/context": [
                 {
-                    "command": "online-judge-extension.createdir",
+                    "command": "oj-ext.createdir",
                     "when": "config.oj-ext.enableNavigation && explorerResourceIsFolder"
                 },
                 {
-                    "command": "online-judge-extension.update",
+                    "command": "oj-ext.update",
                     "when": "config.oj-ext.enableNavigation && explorerResourceIsFolder"
                 },
                 {
-                    "command": "online-judge-extension.addproblem",
+                    "command": "oj-ext.addproblem",
                     "when": "config.oj-ext.enableNavigation && explorerResourceIsFolder"
                 }
             ],
             "editor/title": [
                 {
-                    "command": "online-judge-extension.submit",
+                    "command": "oj-ext.submit",
                     "when": "config.oj-ext.enableNavigation && (editorLangId == cpp || editorLangId == c || editorLangId == python || editorLangId == shellscript || editorLangId == csharp || editorLangId == clojure || editorLangId == d || editorLangId == fsharp || editorLangId == go || editorLangId == haskell || editorLangId == java || editorLangId == javascript || editorLangId == julia || editorLangId == lua || editorLangId == objective-c || editorLangId == ocaml || editorLangId == pascal || editorLangId == perl6 || editorLangId == perl || editorLangId == php || editorLangId == ruby || editorLangId == rust || editorLangId == swift || editorLangId == typescript || editorLangId == vb)",
                     "group": "navigation"
                 },
                 {
-                    "command": "online-judge-extension.bundle",
+                    "command": "oj-ext.bundle",
                     "when": "config.oj-ext.enableNavigation && (editorLangId == cpp || editorLangId == c)",
                     "group": "navigation"
                 }
@@ -92,7 +92,7 @@
         },
         "configuration": [
             {
-                "title": "online-judge-extension",
+                "title": "oj-ext",
                 "properties": {
                     "oj-ext.enableNavigation": {
                         "type": "boolean",

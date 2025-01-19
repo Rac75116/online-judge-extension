@@ -9,7 +9,7 @@ import { addproblem_command } from "./addproblem";
 import { update_command } from "./update";
 
 export async function activate(context: vscode.ExtensionContext) {
-    console.log('"Online Judge Extension" is now active!');
+    console.log('"online-judge-extension" is now active!');
 
     context.subscriptions.push(setup_command);
     context.subscriptions.push(login_command);

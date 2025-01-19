@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
-import { check_oj_api_version } from "./checker";
+import { check_oj_api_version, check_py_version } from "./checker";
 import { get_template, file_exists, make_file_folder_name, async_exec, catch_error } from "./global";
+import { KnownError, UnknownError } from "./error";
 
 export async function get_problem_data(url: string) {
     if (url.includes("judge.yosupo.jp")) {
@@ -8,7 +9,7 @@ export async function get_problem_data(url: string) {
     }
     const { error, stdout, stderr } = await async_exec(`oj-api --wait=0.0 get-problem ${url}`, true);
     if (error) {
-        throw new Error("Something went wrong.");
+        throw new UnknownError("Something went wrong.");
     }
     const problem = JSON.parse(stdout);
     let name = "";
@@ -33,13 +34,14 @@ export async function get_problem_data(url: string) {
     return { problem, name };
 }
 
-export const addproblem_command = vscode.commands.registerCommand("online-judge-extension.addproblem", async (target_directory: vscode.Uri) => {
+export const addproblem_command = vscode.commands.registerCommand("oj-ext.addproblem", async (target_directory: vscode.Uri) => {
     await catch_error("addproblem", async () => {
+        await check_py_version();
         await check_oj_api_version();
 
         const [template_uri, file_or_command] = await get_template();
         if (await file_exists(vscode.Uri.joinPath(target_directory, "contest.oj-ext.json"))) {
-            throw new Error("contest.oj-ext.json not found.");
+            throw new KnownError("contest.oj-ext.json not found.");
         }
 
         const problem_url = await vscode.window.showInputBox({

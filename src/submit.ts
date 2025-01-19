@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
-import { check_oj_version } from "./checker";
+import { check_oj_version, check_py_version } from "./checker";
 import { get_config_checking, async_exec, catch_error, random_id } from "./global";
 import { bundle_code, erase_line_directives, hide_filepath } from "./bundle";
 import { format_code } from "./format";
+import { UnknownError } from "./error";
 
 export async function submit_code(target: string, problem: string, reporter: (message: string) => void) {
     reporter("Getting settings...");
@@ -49,12 +50,13 @@ export async function submit_code(target: string, problem: string, reporter: (me
     const { error, stdout, stderr } = await async_exec(`oj submit --wait 0 --yes ${cxx_latest} ${cxx_compiler} ${py_version} ${py_interpreter} ${open_brower} ${problem} ${new_target}`, true);
     await vscode.workspace.fs.delete(vscode.Uri.file(path.dirname(new_target)), { recursive: true });
     if (error) {
-        throw new Error("Something went wrong.");
+        throw new UnknownError("Something went wrong.");
     }
 }
 
-export const submit_command = vscode.commands.registerCommand("online-judge-extension.submit", async (target_file: vscode.Uri) => {
+export const submit_command = vscode.commands.registerCommand("oj-ext.submit", async (target_file: vscode.Uri) => {
     await catch_error("submit", async () => {
+        await check_py_version();
         await check_oj_version();
 
         const problem_url = await vscode.window.showInputBox({

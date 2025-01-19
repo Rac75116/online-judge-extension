@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
-import { check_oj_api_version } from "./checker";
+import { check_oj_api_version, check_py_version } from "./checker";
 import { select_service, services, service_url, async_exec, make_file_folder_name, get_template, catch_error } from "./global";
+import { KnownError } from "./error";
 
 export async function get_contest_data(service: number, contest_id: string) {
     let contest_url = service_url[service];
@@ -70,7 +71,7 @@ export async function get_contest_data(service: number, contest_id: string) {
             }
             n = Number(cnt);
             if (!Number.isInteger(n) || n < 1 || n > 26) {
-                throw new Error("Incorrect input. Enter an integer between 1 and 26.");
+                throw new KnownError("Incorrect input. Enter an integer between 1 and 26.");
             }
             name = "Atcoder_" + contest_id;
         }
@@ -112,7 +113,7 @@ export async function get_contest_data(service: number, contest_id: string) {
         }
         const n = Number(cnt);
         if (!Number.isInteger(n) || n < 1 || n > 26) {
-            throw new Error("Incorrect input. Enter an integer between 1 and 26.");
+            throw new KnownError("Incorrect input. Enter an integer between 1 and 26.");
         }
         contest.status = "guess";
         contest.result = {
@@ -144,12 +145,13 @@ export async function get_contest_data(service: number, contest_id: string) {
         };
         return { contest: contest, dirname: make_file_folder_name(contest_id), stat: "guess" };
     } else {
-        throw new Error("Could not retrieve contest information.");
+        throw new KnownError("Could not retrieve contest information.");
     }
 }
 
-export const createdir_command = vscode.commands.registerCommand("online-judge-extension.createdir", async (target_directory: vscode.Uri) => {
+export const createdir_command = vscode.commands.registerCommand("oj-ext.createdir", async (target_directory: vscode.Uri) => {
     await catch_error("createdir", async () => {
+        await check_py_version();
         await check_oj_api_version();
 
         const template = await get_template();
