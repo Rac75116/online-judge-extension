@@ -47,10 +47,17 @@ export const bundle_command = vscode.commands.registerCommand("oj-ext.bundle", a
                         progress.report({ message: "Formatting..." });
                         bundled = await format_code(path.dirname(target_file.fsPath), bundled);
                         progress.report({ message: "Copying..." });
-                        copyPaste.copy(bundled, () => {
-                            progress.report({ message: "Copied to clipboard." });
+                        const dst = get_config_checking<string>("bundledFileDestination");
+                        if (dst === "clipboard") {
+                            copyPaste.copy(bundled, () => {
+                                progress.report({ message: "Copied to clipboard." });
+                                setTimeout(() => resolve(null), 2500);
+                            });
+                        } else {
+                            await vscode.workspace.fs.writeFile(vscode.Uri.file(dst), new TextEncoder().encode(bundled));
+                            progress.report({ message: `Copied to ${path.basename(dst)}.` });
                             setTimeout(() => resolve(null), 2500);
-                        });
+                        }
                     } catch (error) {
                         reject(error);
                         return;
