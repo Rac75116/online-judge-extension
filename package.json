@@ -1,8 +1,8 @@
 {
     "name": "online-judge-extension",
-    "displayName": "oj-ext",
+    "displayName": "online-judge-extension",
     "description": "VSCode extension for online-judge-tools",
-    "publisher": "20ba6d2f-e593-6a95-8f78-84507b33cc11",
+    "publisher": "Rac",
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.87.0"
