@@ -3,7 +3,8 @@
     "displayName": "online-judge-extension",
     "description": "VSCode extension for online-judge-tools",
     "publisher": "Rac",
-    "version": "0.0.1",
+    "repository": "https://github.com/sortA0329/online-judge-extension",
+    "version": "0.0.2",
     "engines": {
         "vscode": "^1.87.0"
     },
