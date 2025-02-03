@@ -3,6 +3,7 @@ import * as path from "node:path";
 import * as crypto from "node:crypto";
 import * as childProcess from "node:child_process";
 import { KnownError } from "./error";
+import { cpp_template, java_template, py_template } from "./templates";
 
 export const services: { [name: string]: number } = {
     Aizu_Online_Judge: 1,
@@ -60,10 +61,10 @@ export const service_url: { [service: number]: string } = {
 } as const;
 
 type async_exec_result_t = { error: childProcess.ExecException | null; stdout: string; stderr: string };
-export function async_exec(command: string, print_log: boolean = false): Promise<async_exec_result_t> {
+export function async_exec(command: string, print_log: boolean = false, options: childProcess.ExecOptions = {}): Promise<async_exec_result_t> {
     return new Promise((resolve) => {
         console.log("Execute: " + command);
-        childProcess.exec(command, (error, stdout, stderr) => {
+        childProcess.exec(command, options, (error, stdout, stderr) => {
             if (print_log) {
                 if (stdout !== "") {
                     console.log(stdout);
@@ -111,25 +112,37 @@ export function make_file_folder_name(old: string) {
     return old.replaceAll("\\", "_").replaceAll("/", "_").replaceAll(":", "_").replaceAll("*", "_").replaceAll("?", "_").replaceAll('"', "_").replaceAll("<", "_").replaceAll(">", "_").replaceAll("|", "_").replaceAll(";", "_").replaceAll("%", "_");
 }
 
-export async function get_template(): Promise<[vscode.Uri | undefined, string]> {
-    const template_path = get_config_checking<string>("templateFile");
-    let template_uri: vscode.Uri | undefined = undefined;
-    let file_or_command = "Main";
-    if (template_path !== "") {
-        template_uri = vscode.Uri.file(template_path);
-        const ft = await file_exists(template_uri);
-        if (ft !== vscode.FileType.File) {
-            if (ft === vscode.FileType.Directory) {
-                throw new KnownError('"Template File" path is a directory, not a file.');
-            } else if (ft === vscode.FileType.SymbolicLink) {
-                throw new KnownError('"Template File" path is a symbolic link, not a file.');
-            } else {
-                throw new KnownError('The file pointed to by "Template File" path does not exist.');
+export async function copy_template(dest: vscode.Uri) {
+    const template_path = get_config_checking<string>("templatePath");
+    if (template_path.length === 0) {
+        await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dest, "Main.cpp"), new TextEncoder().encode(cpp_template));
+        await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dest, "Main.py"), new TextEncoder().encode(py_template));
+        await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dest, "Main.java"), new TextEncoder().encode(java_template));
+        return;
+    } else if (template_path[0] === "$") {
+        const { error, stdout, stderr } = await async_exec(template_path.slice(1), false, { cwd: dest.fsPath });
+        if (error) {
+            throw new KnownError("Failed to execute the command of `oj-ext.templatePath`.");
+        }
+        return;
+    }
+    const template_uri = vscode.Uri.file(template_path);
+    const ft = await file_exists(template_uri);
+    if (ft === vscode.FileType.File) {
+        await vscode.workspace.fs.copy(template_uri, vscode.Uri.joinPath(dest, path.basename(template_path)));
+    } else if (ft === vscode.FileType.Directory || ft === vscode.FileType.SymbolicLink) {
+        const entries = await vscode.workspace.fs.readDirectory(template_uri);
+        for (const [name, type] of entries) {
+            if (type === vscode.FileType.Unknown) {
+                throw new KnownError(`Failed to get the file type of ${name} while reading the directory pointed to by "templatePath".`);
             }
         }
-        file_or_command = path.basename(template_path);
+        for (const [name, type] of entries) {
+            await vscode.workspace.fs.copy(vscode.Uri.joinPath(template_uri, name), vscode.Uri.joinPath(dest, name));
+        }
+    } else {
+        throw new KnownError('The file pointed to by "templatePath" does not exist.');
     }
-    return [template_uri, file_or_command];
 }
 
 export async function catch_error(title: string, callback: () => void) {

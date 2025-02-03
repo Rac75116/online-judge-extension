@@ -104,9 +104,9 @@
                         "description": "Controls whether to show a button to execute a command in the editor or file explorer.",
                         "default": true
                     },
-                    "oj-ext.templateFile": {
+                    "oj-ext.templatePath": {
                         "type": "string",
-                        "description": "Specify the path of the template program to be created with \"createdir\" command."
+                        "description": "Specify the path of the template program to be created with \"createdir\" or \"addproblem\" command."
                     },
                     "oj-ext.guessC++Latest": {
                         "type": "boolean",

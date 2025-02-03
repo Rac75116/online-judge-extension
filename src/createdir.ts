@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { check_oj_api_version, check_py_version } from "./checker";
-import { select_service, services, service_url, async_exec, make_file_folder_name, get_template, catch_error } from "./global";
+import { select_service, services, service_url, async_exec, make_file_folder_name, copy_template, catch_error } from "./global";
 import { KnownError } from "./error";
 
 export async function get_contest_data(service: number, contest_id: string) {
@@ -16,7 +16,7 @@ export async function get_contest_data(service: number, contest_id: string) {
     }
     const { error, stdout, stderr } = await async_exec(`oj-api --wait=0.0 get-contest ${contest_url}`, true);
 
-    let contest = JSON.parse(stdout);
+    let contest = error ? undefined : JSON.parse(stdout);
     if (contest?.status === "ok") {
         return { contest: contest, dirname: make_file_folder_name(contest.result.name), stat: "summary" };
     } else if (service === services.Atcoder) {
@@ -154,12 +154,6 @@ export const createdir_command = vscode.commands.registerCommand("oj-ext.created
         await check_py_version();
         await check_oj_api_version();
 
-        const template = await get_template();
-        if (template === undefined) {
-            return;
-        }
-        const [template_uri, file_or_command] = template;
-
         const service = await select_service([services.Atcoder, services.Atcoder_Problems, services.CodeChef, services.Codeforces, services.yukicoder]);
         if (service === undefined) {
             return;
@@ -188,12 +182,7 @@ export const createdir_command = vscode.commands.registerCommand("oj-ext.created
             const dir2 = vscode.Uri.joinPath(dir, "alphabet" in problem.context ? problem.context.alphabet : String(index) + " " + problem.name);
             await vscode.workspace.fs.createDirectory(dir2);
             vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dir2, "problem.oj-ext.json"), new TextEncoder().encode(JSON.stringify(problem, null, 4)));
-            const file = vscode.Uri.joinPath(dir2, file_or_command);
-            if (template_uri === undefined) {
-                vscode.workspace.fs.writeFile(file, new Uint8Array());
-            } else {
-                vscode.workspace.fs.copy(template_uri, file);
-            }
+            await copy_template(dir2);
         });
     });
 });
