@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
 import * as copyPaste from "copy-paste";
-import { get_config_checking, async_exec, catch_error } from "./global";
+import { get_config_checking, async_exec, catch_error, expand_variables } from "./global";
 import { check_oj_verify_version, check_py_version } from "./checker";
 import { format_code } from "./format";
 import { UnknownError } from "./error";
@@ -18,7 +18,7 @@ export async function bundle_code(target_file: string) {
     const config_include_path = get_config_checking<string[]>("includePath");
     const config_hide_path = get_config_checking<boolean>("hidePath");
     const config_erase_line_directives = get_config_checking<boolean>("eraseLineDirectives");
-    const { error, stdout, stderr } = await async_exec(`cd ${path.dirname(target_file)} && oj-bundle ${target_file}${config_include_path.map((value) => " -I " + value).join("")}`);
+    const { error, stdout, stderr } = await async_exec(`cd ${path.dirname(target_file)} && oj-bundle ${target_file}${config_include_path.map((value) => " -I " + expand_variables(value)).join("")}`);
     if (stderr !== "") {
         console.error(stderr);
     }

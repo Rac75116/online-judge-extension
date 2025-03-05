@@ -168,3 +168,110 @@ export function random_id(len: number) {
         .map((n) => elements[n % elements.length])
         .join("");
 }
+
+export function expand_variables(str: string): string {
+    return str.replace(/(\${[a-zA-Z0-9_]+(?::[^}]*)?})/g, (match: string, variable: string) => {
+        const parts = variable.slice(2, -1).split(":");
+        const variableName = parts[0];
+        const parameter = parts[1] || "";
+        console.log(match, variable, parts, variableName, parameter);
+
+        const variables: Record<string, (parameter?: string) => string | undefined> = {
+            workspaceFolder: (param?: string) => {
+                if (param) {
+                    const folder = vscode.workspace.workspaceFolders?.find((f) => f.name === param);
+                    return folder?.uri.fsPath;
+                } else {
+                    const folder = vscode.workspace.workspaceFolders?.[0];
+                    return folder?.uri.fsPath;
+                }
+            },
+            file: () => {
+                const editor = vscode.window.activeTextEditor;
+                return editor?.document?.uri.fsPath;
+            },
+            fileBasename: () => {
+                const filePath = variables["file"]();
+                return filePath ? path.basename(filePath) : undefined;
+            },
+            fileBasenameNoExtension: () => {
+                const filePath = variables["file"]();
+                if (filePath) {
+                    return path.basename(filePath, path.extname(filePath));
+                }
+                return undefined;
+            },
+            fileDirname: () => {
+                const filePath = variables["file"]();
+                return filePath ? path.dirname(filePath) : undefined;
+            },
+            fileExtname: () => {
+                const filePath = variables["file"]();
+                return filePath ? path.extname(filePath) : undefined;
+            },
+            relativeFile: () => {
+                const filePath = variables["file"]();
+                if (filePath) {
+                    const workspaceFolders = vscode.workspace.workspaceFolders;
+                    if (workspaceFolders) {
+                        for (const folder of workspaceFolders) {
+                            const folderPath = folder?.uri.fsPath;
+                            if (filePath.startsWith(folderPath)) {
+                                return path.relative(folderPath, filePath);
+                            }
+                        }
+                    }
+                }
+                return undefined;
+            },
+            relativeFileDirname: () => {
+                const relativeFilePath = variables["relativeFile"]();
+                return relativeFilePath ? path.dirname(relativeFilePath) : undefined;
+            },
+            selectedText: () => {
+                const editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    const selection = editor.selection;
+                    if (!selection.isEmpty) {
+                        return editor?.document?.getText(selection);
+                    }
+                }
+                return undefined;
+            },
+            lineNumber: () => {
+                const editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    const position = editor?.selection?.active;
+                    if (position) {
+                        return (position.line + 1).toString();
+                    }
+                }
+                return undefined;
+            },
+            pathSeparator: () => {
+                return path.sep;
+            },
+            env: (param?: string) => {
+                if (param) {
+                    return process.env[param];
+                }
+                return undefined;
+            },
+            config: (param?: string) => {
+                if (param) {
+                    return vscode.workspace.getConfiguration().get(param);
+                }
+                return undefined;
+            },
+        };
+
+        const resolver = variables[variableName];
+        if (resolver) {
+            const value = resolver(parameter);
+            if (value !== undefined) {
+                return value;
+            }
+        }
+        return match;
+    });
+}

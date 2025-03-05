@@ -1,11 +1,12 @@
 import * as vscode from "vscode";
+import * as os from "node:os";
 import { check_oj_api_version, check_oj_verify_version, check_oj_version, check_py_version, has_selenium } from "./checker";
 import { async_exec, catch_error } from "./global";
 import { UnknownError } from "./error";
 
 export async function setup(reporter: (increment: number) => void) {
     const increment_width = 100 / 18;
-    const install_dir = vscode.Uri.joinPath(vscode.Uri.file(process.cwd()), "./.oj-ext/setup");
+    const install_dir = vscode.Uri.joinPath(vscode.Uri.file(os.homedir()), "./.oj-ext/setup");
     await vscode.workspace.fs.createDirectory(install_dir);
     const sleep = (msec: number) => new Promise((resolve) => setTimeout(resolve, msec));
     const commands1 = ["pip3 uninstall -y online-judge-api-client", "pip3 uninstall -y online-judge-tools", "pip3 uninstall -y online-judge-verify-helper", "pip3 install -U selenium", "pip3 install -U setuptools", "pip3 install online-judge-api-client", "pip3 install online-judge-tools", "pip3 install online-judge-verify-helper"];
