@@ -1,11 +1,11 @@
 import * as vscode from "vscode";
-import { services, service_url, async_exec, select_service, catch_error } from "./global";
+import { services, service_url, exec_async, select_service, catch_error } from "./global";
 import { has_selenium, check_oj_version, check_py_version } from "./checker";
 import { EnvironmentError, KnownError, UnknownError } from "./error";
 
 export async function login_service(service: number, use_selenium: boolean) {
     const url = service_url[service];
-    const { error, stdout, stderr } = await async_exec(`oj login --check ${url}`, true);
+    const { error, stdout, stderr } = await exec_async(`oj login --check ${url}`, true);
     if (!error) {
         vscode.window.showInformationMessage("login: You have already signed in.");
         return;
@@ -22,7 +22,7 @@ export async function login_service(service: number, use_selenium: boolean) {
                     progress.report({ message: "Prease wait a moment..." });
                     let ended = false;
                     setTimeout(() => !ended && progress.report({ message: "The process ends automatically when the window is closed." }), 3000);
-                    const { error, stdout, stderr } = await async_exec(`oj login --use-browser always ${url}`, true);
+                    const { error, stdout, stderr } = await exec_async(`oj login --use-browser always ${url}`, true);
                     ended = true;
                     if (error) {
                         if (stdout.includes("[FAILURE] You are not signed in.")) {
@@ -50,7 +50,7 @@ export async function login_service(service: number, use_selenium: boolean) {
             password: true,
             prompt: "Enter your password.",
         });
-        const { error, stdout, stderr } = await async_exec(`oj login -u ${user} -p ${pass} --use-browser never ${url}`, true);
+        const { error, stdout, stderr } = await exec_async(`oj login -u ${user} -p ${pass} --use-browser never ${url}`, true);
         if (error) {
             if (stdout.includes("Username or Password is incorrect.")) {
                 throw new KnownError("Username or Password is incorrect.");

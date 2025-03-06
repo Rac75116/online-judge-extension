@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
-import { async_exec, catch_error } from "./global";
+import { exec_async, catch_error } from "./global";
 import { check_oj_version, check_py_version } from "./checker";
 import { UnknownError } from "./error";
 
 export async function remove_cookie() {
-    const { error, stdout, stderr } = await async_exec(`oj -h`, true);
+    const { error, stdout, stderr } = await exec_async(`oj -h`, true);
     if (error) {
         throw new UnknownError("Something went wrong.");
     }

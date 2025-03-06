@@ -61,7 +61,7 @@ export const service_url: { [service: number]: string } = {
 } as const;
 
 type async_exec_result_t = { error: childProcess.ExecException | null; stdout: string; stderr: string };
-export function async_exec(command: string, print_log: boolean = false, options: childProcess.ExecOptions = {}): Promise<async_exec_result_t> {
+export function exec_async(command: string, print_log: boolean = false, options: childProcess.ExecOptions = {}): Promise<async_exec_result_t> {
     return new Promise((resolve) => {
         console.log("Execute: " + command);
         childProcess.exec(command, options, (error, stdout, stderr) => {
@@ -76,6 +76,16 @@ export function async_exec(command: string, print_log: boolean = false, options:
             resolve({ error: error, stdout: stdout, stderr: stderr });
         });
     });
+}
+
+export async function replace_async(str: string, regex: RegExp, asyncFn: any) {
+    const promises: any[] = [];
+    str.replace(regex, (full, ...args) => {
+        promises.push(asyncFn(full, ...args));
+        return full;
+    });
+    const data = await Promise.all(promises);
+    return str.replace(regex, () => data.shift());
 }
 
 export async function file_exists(uri: vscode.Uri) {
@@ -120,7 +130,7 @@ export async function copy_template(dest: vscode.Uri) {
         await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(dest, "Main.java"), new TextEncoder().encode(java_template));
         return;
     } else if (template_path[0] === "$") {
-        const { error, stdout, stderr } = await async_exec(template_path.slice(1), false, { cwd: dest.fsPath });
+        const { error, stdout, stderr } = await exec_async(template_path.slice(1), false, { cwd: dest.fsPath });
         if (error) {
             throw new KnownError("Failed to execute the command of `oj-ext.templatePath`.");
         }
@@ -169,12 +179,76 @@ export function random_id(len: number) {
         .join("");
 }
 
+export function get_language(ext: string) {
+    const ext_lang_dict: { [key: string]: string } = {
+        ".cpp": "c++",
+        ".cxx": "c++",
+        ".cc": "c++",
+        ".C": "c++",
+        ".py": "python",
+        ".awk": "awk",
+        ".sh": "bash",
+        ".bf": "brainfuck",
+        ".cs": "c#",
+        ".c": "c",
+        ".ceylon": "ceylon",
+        ".clj": "clojure",
+        ".lisp": "common lisp",
+        ".lsp": "common lisp",
+        ".cl": "common lisp",
+        ".cr": "crystal",
+        ".d": "d",
+        ".fs": "f#",
+        ".for": "fortran",
+        ".f": "fortran",
+        ".f90": "fortran",
+        ".f95": "fortran",
+        ".f03": "fortran",
+        ".go": "go",
+        ".hs": "haskell",
+        ".java": "java",
+        ".js": "javascript",
+        ".jl": "julia",
+        ".kt": "kotlin",
+        ".kts": "kotlin",
+        ".lua": "lua",
+        ".nim": "nim",
+        ".moon": "moonscript",
+        ".m": "objective-c",
+        ".ml": "ocaml",
+        ".pas": "pascal",
+        ".p6": "perl6",
+        ".pl6": "perl6",
+        ".pm6": "perl6",
+        ".pl": "perl",
+        ".pm": "perl",
+        ".php": "php",
+        ".rb": "ruby",
+        ".rs": "rust",
+        ".scala": "scala",
+        ".scm": "scheme",
+        ".sed": "sed",
+        ".sml": "standard ml",
+        ".swift": "swift",
+        ".txt": "text",
+        ".ts": "typescript",
+        ".unl": "unlambda",
+        ".vim": "vim script",
+        ".vb": "visual basic",
+    };
+    const result = ext_lang_dict[ext];
+    if (result === undefined) {
+        return "unknown";
+    } else {
+        return result;
+    }
+}
+
 export function expand_variables(str: string): string {
     return str.replace(/(\${[a-zA-Z0-9_]+(?::[^}]*)?})/g, (match: string, variable: string) => {
         const parts = variable.slice(2, -1).split(":");
         const variableName = parts[0];
         const parameter = parts[1] || "";
-        console.log(match, variable, parts, variableName, parameter);
 
         const variables: Record<string, (parameter?: string) => string | undefined> = {
             workspaceFolder: (param?: string) => {

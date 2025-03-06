@@ -1,5 +1,5 @@
 import { EnvironmentError, KnownError, PythonNotInstalledError } from "./error";
-import { async_exec } from "./global";
+import { exec_async } from "./global";
 
 const py_version = [3, 8];
 const oj_version = [12, 0, 0];
@@ -27,7 +27,7 @@ export async function check_py_version(force = false) {
     if (checked_py_version) {
         return;
     }
-    const { error, stdout, stderr } = await async_exec("pip3 --version", true);
+    const { error, stdout, stderr } = await exec_async("pip3 --version", true);
     if (error) {
         throw new PythonNotInstalledError("Python is not installed.");
     }
@@ -52,10 +52,10 @@ export async function check_oj_version(force = false) {
     if (checked_oj_version) {
         return;
     }
-    if ((await async_exec("oj -h", true)).error) {
+    if ((await exec_async("oj -h", true)).error) {
         throw new EnvironmentError("online-judge-tools is not installed.");
     }
-    const { error, stdout, stderr } = await async_exec("pip3 show online-judge-tools", true);
+    const { error, stdout, stderr } = await exec_async("pip3 show online-judge-tools", true);
     if (error) {
         throw new EnvironmentError("online-judge-tools is not installed.");
     }
@@ -80,10 +80,10 @@ export async function check_oj_api_version(force = false) {
     if (checked_oj_api_version) {
         return;
     }
-    if ((await async_exec("oj-api -h", true)).error) {
+    if ((await exec_async("oj-api -h", true)).error) {
         throw new EnvironmentError("online-judge-api-client is not installed.");
     }
-    const { error, stdout, stderr } = await async_exec("pip3 show online-judge-api-client", true);
+    const { error, stdout, stderr } = await exec_async("pip3 show online-judge-api-client", true);
     if (error) {
         throw new EnvironmentError("online-judge-api-client is not installed.");
     }
@@ -108,10 +108,10 @@ export async function check_oj_verify_version(force = false) {
     if (checked_oj_verify_version) {
         return;
     }
-    if ((await async_exec("oj-verify -h", true)).error || (await async_exec("oj-bundle -h", true)).error) {
+    if ((await exec_async("oj-verify -h", true)).error || (await exec_async("oj-bundle -h", true)).error) {
         throw new EnvironmentError("online-judge-verify-helper is not installed.");
     }
-    const { error, stdout, stderr } = await async_exec("pip3 show online-judge-verify-helper", true);
+    const { error, stdout, stderr } = await exec_async("pip3 show online-judge-verify-helper", true);
     if (error) {
         throw new EnvironmentError("online-judge-verify-helper is not installed.");
     }
@@ -137,7 +137,7 @@ export async function has_selenium(force = false) {
     if (checked_has_selenium) {
         return true;
     }
-    const { error, stdout, stderr } = await async_exec("pip3 show selenium", true);
+    const { error, stdout, stderr } = await exec_async("pip3 show selenium", true);
     if (error) {
         return false;
     }

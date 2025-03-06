@@ -1,10 +1,9 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
-import * as copyPaste from "copy-paste";
-import { get_config_checking, async_exec, catch_error, expand_variables } from "./global";
+import { get_config_checking, exec_async, catch_error, expand_variables, get_language, replace_async } from "./global";
 import { check_oj_verify_version, check_py_version } from "./checker";
-import { format_code } from "./format";
-import { UnknownError } from "./error";
+import { minify_code } from "./minify";
+import { KnownError, UnknownError } from "./error";
 
 export function hide_filepath(code: string) {
     return code.replaceAll(/#line\s(\d+)\sR?".*"/g, "#line $1");
@@ -14,18 +13,38 @@ export function erase_line_directives(code: string) {
     return code.replaceAll(/#line\s\d+(\sR?".*")?/g, "");
 }
 
-export async function bundle_code(target_file: string) {
+async function bundle_cxx_code(target_file: string) {
     const config_include_path = get_config_checking<string[]>("includePath");
     const config_hide_path = get_config_checking<boolean>("hidePath");
     const config_erase_line_directives = get_config_checking<boolean>("eraseLineDirectives");
-    const { error, stdout, stderr } = await async_exec(`cd ${path.dirname(target_file)} && oj-bundle ${target_file}${config_include_path.map((value) => " -I " + expand_variables(value)).join("")}`);
+    const { error, stdout, stderr } = await exec_async(`cd ${path.dirname(target_file)} && oj-bundle ${target_file}${config_include_path.map((value) => " -I " + expand_variables(value)).join("")}`);
     if (stderr !== "") {
         console.error(stderr);
     }
     if (error) {
         throw new UnknownError("Something went wrong.");
     }
-    return "/* This code was bundled by `oj-bundle` and `online-judge-extension`. */\n" + (config_erase_line_directives ? erase_line_directives(stdout) : config_hide_path ? hide_filepath(stdout) : stdout);
+    return config_erase_line_directives ? erase_line_directives(stdout) : config_hide_path ? hide_filepath(stdout) : stdout;
+}
+
+async function bundle_py_code(target_file: string) {
+    const code = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(target_file)));
+    const result = await replace_async(code, /from\s+(.+)\s+import\s+[\s\S]+\s+#\s+!oj-ext\s+import\s+(.+)/gm, async (match: string, name: string, ipath: string) => {
+        ipath = expand_variables(ipath);
+        return `# begin import ${name}\n` + new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(ipath))).trim() + `\n# end import ${name}`;
+    });
+    return result;
+}
+
+export async function bundle_code(target_file: string) {
+    const lang = get_language(path.extname(target_file));
+    if (lang === "c++" || lang === "c") {
+        return bundle_cxx_code(target_file);
+    } else if (lang === "python") {
+        return bundle_py_code(target_file);
+    } else {
+        throw new KnownError("This language is not supported by `oj-ext.bundle`.");
+    }
 }
 
 export const bundle_command = vscode.commands.registerCommand("oj-ext.bundle", async (target_file: vscode.Uri) => {
@@ -44,17 +63,19 @@ export const bundle_command = vscode.commands.registerCommand("oj-ext.bundle", a
                     try {
                         progress.report({ message: "Bundling..." });
                         let bundled = await bundle_code(target_file.fsPath);
-                        progress.report({ message: "Formatting..." });
-                        bundled = await format_code(path.dirname(target_file.fsPath), bundled);
+                        const config_minify = get_config_checking<boolean>("minify");
+                        if (config_minify) {
+                            progress.report({ message: "Minifying..." });
+                            bundled = await minify_code(bundled, path.extname(target_file.fsPath));
+                        }
                         progress.report({ message: "Copying..." });
                         const dst = get_config_checking<string>("bundledFileDestination");
                         if (dst === "clipboard") {
-                            copyPaste.copy(bundled, () => {
-                                progress.report({ message: "Copied to clipboard." });
-                                setTimeout(() => resolve(null), 2500);
-                            });
+                            await vscode.env.clipboard.writeText(bundled);
+                            progress.report({ message: "Copied to clipboard." });
+                            setTimeout(() => resolve(null), 2500);
                         } else {
-                            await vscode.workspace.fs.writeFile(vscode.Uri.file(dst), new TextEncoder().encode(bundled));
+                            await vscode.workspace.fs.writeFile(vscode.Uri.file(expand_variables(dst)), new TextEncoder().encode(bundled));
                             progress.report({ message: `Copied to ${path.basename(dst)}.` });
                             setTimeout(() => resolve(null), 2500);
                         }

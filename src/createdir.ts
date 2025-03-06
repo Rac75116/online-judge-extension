@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { check_oj_api_version, check_py_version } from "./checker";
-import { select_service, services, service_url, async_exec, make_file_folder_name, copy_template, catch_error } from "./global";
+import { select_service, services, service_url, exec_async, make_file_folder_name, copy_template, catch_error } from "./global";
 import { KnownError } from "./error";
 
 export async function get_contest_data(service: number, contest_id: string) {
@@ -14,7 +14,7 @@ export async function get_contest_data(service: number, contest_id: string) {
     } else if (service === services.Codeforces) {
         contest_url += `contest/${contest_id}/`;
     }
-    const { error, stdout, stderr } = await async_exec(`oj-api --wait=0.0 get-contest ${contest_url}`, true);
+    const { error, stdout, stderr } = await exec_async(`oj-api --wait=0.0 get-contest ${contest_url}`, true);
 
     let contest = error ? undefined : JSON.parse(stdout);
     if (contest?.status === "ok") {

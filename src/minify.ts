@@ -1,9 +1,8 @@
 import * as vscode from "vscode";
-import * as path from "node:path";
-import { get_config_checking, random_id } from "./global";
+import * as os from "node:os";
+import { exec_async, get_language, random_id } from "./global";
 
-const styles: { [key: string]: string } = {
-    Compress: `---
+const clang_format = `---
 BasedOnStyle: LLVM
 AccessModifierOffset: 0
 AlignAfterOpenBracket: DontAlign
@@ -122,62 +121,49 @@ BraceWrapping:
     SplitEmptyFunction: false
     SplitEmptyRecord: false
     SplitEmptyNamespace: false
-`,
-    LLVM: `---
-BasedOnStyle: LLVM
-`,
-    Google: `---
-BasedOnStyle: Google
-`,
-    Chromium: `---
-BasedOnStyle: Chromium
-`,
-    Mozilla: `---
-BasedOnStyle: Mozilla
-`,
-    WebKit: `---
-BasedOnStyle: WebKit
-`,
-    Microsoft: `---
-BasedOnStyle: Microsoft
-`,
-    GNU: `---
-BasedOnStyle: GNU
-`,
-};
+`;
 
-export async function format_code(dirpath: string, source_code: string) {
-    const format_style = get_config_checking<string>("formatStyle");
-    if (format_style === "Never") {
-        return source_code;
-    }
-    const working_dir = path.join(dirpath, `/.${random_id(32)}`);
-    await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.join(working_dir, "/.vscode")));
-    const promises = [];
-    promises.push(vscode.workspace.fs.writeFile(vscode.Uri.file(path.join(working_dir, "/formatted.cpp")), new TextEncoder().encode(source_code)));
-    promises.push(vscode.workspace.fs.writeFile(vscode.Uri.file(path.join(working_dir, "/.vscode/settings.json")), new TextEncoder().encode('{"editor.defaultFormatter": "ms-vscode.cpptools","C_Cpp.clang_format_style": "file"}')));
-    if (format_style !== "Inherit") {
-        promises.push(vscode.workspace.fs.writeFile(vscode.Uri.file(path.join(working_dir, "/.clang-format")), new TextEncoder().encode(styles[format_style])));
-    }
-    await Promise.all(promises);
-    try {
-        const uri = vscode.Uri.file(path.join(working_dir, "/formatted.cpp"));
-        const document = await vscode.workspace.openTextDocument(uri);
-        const edits: vscode.TextEdit[] | undefined = await vscode.commands.executeCommand("vscode.executeFormatDocumentProvider", uri, {});
-        if (edits && edits.length > 0) {
-            const workspaceEdit = new vscode.WorkspaceEdit();
-            for (const edit of edits) {
-                workspaceEdit.replace(uri, edit.range, edit.newText);
+export async function minify_code(source_code: string, ext: string) {
+    const working_dir = vscode.Uri.joinPath(vscode.Uri.file(os.homedir()), `./oj-ext/minify/${random_id(32)}`);
+    await vscode.workspace.fs.createDirectory(working_dir);
+    const uri = vscode.Uri.joinPath(working_dir, `minified${ext}`);
+    await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(source_code));
+    let result = source_code;
+    const lang = get_language(ext);
+    if (lang === "c++" || lang === "c") {
+        try {
+            await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(working_dir, ".clang-format"), new TextEncoder().encode(clang_format));
+            const document = await vscode.workspace.openTextDocument(uri);
+            const edits: vscode.TextEdit[] | undefined = await vscode.commands.executeCommand("vscode.executeFormatDocumentProvider", uri, {});
+            if (edits && edits.length > 0) {
+                const workspaceEdit = new vscode.WorkspaceEdit();
+                for (const edit of edits) {
+                    workspaceEdit.replace(uri, edit.range, edit.newText);
+                }
+                const success = await vscode.workspace.applyEdit(workspaceEdit);
+                if (success) {
+                    await document.save();
+                }
             }
-            const success = await vscode.workspace.applyEdit(workspaceEdit);
-            if (success) {
-                await document.save();
-            }
+        } catch {
+            vscode.window.showWarningMessage("oj-ext: Failed to minify the code, continue with the original code.");
+        } finally {
+            result = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
         }
-    } catch {
-        vscode.window.showWarningMessage("oj-ext: Failed to format the code, continue with the original code.");
+    } else if (lang === "python") {
+        await vscode.workspace.fs.createDirectory(working_dir);
+        const uri = vscode.Uri.joinPath(working_dir, "minified.py");
+        await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(source_code));
+        const { error, stdout, stderr } = await exec_async(`pyminify ${uri.fsPath}`);
+        if (error) {
+            vscode.window.showWarningMessage("oj-ext: Failed to minify the code, continue with the original code.");
+        } else {
+            result = stdout;
+        }
     }
-    const result = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(path.join(working_dir, "/formatted.cpp"))));
-    await vscode.workspace.fs.delete(vscode.Uri.file(working_dir), { recursive: true });
-    return "/* This code was formatted by `clang-format` and `online-judge-extension`. */\n" + result;
+    const workspaceEdit = new vscode.WorkspaceEdit();
+    workspaceEdit.deleteFile(uri);
+    await vscode.workspace.applyEdit(workspaceEdit);
+    await vscode.workspace.fs.delete(working_dir, { recursive: true });
+    return result;
 }

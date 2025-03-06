@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 import { check_oj_api_version, check_py_version } from "./checker";
-import { copy_template, make_file_folder_name, async_exec, catch_error } from "./global";
+import { copy_template, make_file_folder_name, exec_async, catch_error } from "./global";
 import { UnknownError } from "./error";
 
 export async function get_problem_data(url: string) {
-    const { error, stdout, stderr } = await async_exec(`oj-api --wait=0.0 get-problem ${url}`, true);
+    const { error, stdout, stderr } = await exec_async(`oj-api --wait=0.0 get-problem ${url}`, true);
     if (error) {
         throw new UnknownError("Something went wrong.");
     }

@@ -12,8 +12,8 @@ int main() {
 }
 `;
 export const py_template = `# -*- coding: utf-8 -*-
-import bisect,collections,copy,heapq,itertools,math,string,sys
-sys.setrecursionlimit(10**7)
+import bisect, collections, copy, heapq, itertools, math, string, sys
+sys.setrecursionlimit(10**6)
 sys.set_int_max_str_digits(0)
 def rd_line(): return [int(num) for num in input().split()]
 
