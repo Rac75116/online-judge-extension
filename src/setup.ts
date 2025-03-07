@@ -7,7 +7,7 @@ import { UnknownError } from "./error";
 export async function setup(reporter: (increment: number) => void) {
     const increment_width = 100 / 18;
     const install_dir = vscode.Uri.joinPath(vscode.Uri.file(os.homedir()), "./.oj-ext/setup");
-    if (await file_exists(install_dir)) {
+    if (await file_exists(install_dir.fsPath)) {
         await vscode.workspace.fs.delete(install_dir, { recursive: true });
     }
     await vscode.workspace.fs.createDirectory(install_dir);

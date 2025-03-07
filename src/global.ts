@@ -88,9 +88,9 @@ export async function replace_async(str: string, regex: RegExp, asyncFn: any) {
     return str.replace(regex, () => data.shift());
 }
 
-export async function file_exists(uri: vscode.Uri) {
+export async function file_exists(path_str: string) {
     try {
-        const stat = await vscode.workspace.fs.stat(uri);
+        const stat = await vscode.workspace.fs.stat(vscode.Uri.file(path_str));
         return stat.type;
     } catch {
         return vscode.FileType.Unknown;
@@ -141,7 +141,7 @@ export async function copy_template(dest: vscode.Uri) {
         return;
     }
     const template_uri = vscode.Uri.file(template_path);
-    const ft = await file_exists(template_uri);
+    const ft = await file_exists(template_uri.fsPath);
     if (ft === vscode.FileType.File) {
         await vscode.workspace.fs.copy(template_uri, vscode.Uri.joinPath(dest, path.basename(template_path)));
     } else if (ft === vscode.FileType.Directory || ft === vscode.FileType.SymbolicLink) {
