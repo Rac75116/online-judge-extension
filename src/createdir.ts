@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { check_oj_api_version, check_py_version } from "./checker";
 import { select_service, services, service_url, exec_async, make_file_folder_name, copy_template, catch_error } from "./global";
-import { KnownError } from "./error";
+import { KnownError, UnknownError } from "./error";
 
 export async function get_contest_data(service: number, contest_id: string) {
     let contest_url = service_url[service];
@@ -13,6 +13,8 @@ export async function get_contest_data(service: number, contest_id: string) {
         contest_url += contest_id + "/";
     } else if (service === services.Codeforces) {
         contest_url += `contest/${contest_id}/`;
+    } else {
+        throw new UnknownError("Something went wrong.");
     }
     const { error, stdout, stderr } = await exec_async(`oj-api --wait=0.0 get-contest ${contest_url}`, true);
 
@@ -40,21 +42,27 @@ export async function get_contest_data(service: number, contest_id: string) {
             let arc = Number(contest_id.substring(3));
             if (arc <= 57) {
                 n = 4;
-            } else {
+            } else if (arc <= 103) {
                 n = 6;
-                if (arc <= 104) {
-                    s = 2;
-                }
+                s = 2;
+            } else if (arc <= 183) {
+                n = 6;
                 if (arc === 120) {
                     f2 = true;
                 }
+            } else {
+                n = arc === 193 ? 4 : 5;
             }
             name = `AtCoder Regular Contest ${arc}`;
         } else if (/agc[0-9]{3}/.test(contest_id)) {
             let agc = Number(contest_id.substring(3));
-            n = 6;
-            if (agc === 28) {
-                f2 = true;
+            if (agc <= 66) {
+                n = agc === 9 ? 5 : 6;
+                if (agc === 28) {
+                    f2 = true;
+                }
+            } else {
+                n = 5;
             }
             name = `AtCoder Grand Contest ${agc}`;
         } else if (/ahc[0-9]{3}/.test(contest_id)) {

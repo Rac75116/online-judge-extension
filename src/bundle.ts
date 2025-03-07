@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
-import { get_config_checking, exec_async, catch_error, expand_variables, get_language, replace_async } from "./global";
+import { get_config_checking, exec_async, catch_error, expand_variables, get_language, replace_async, normalize } from "./global";
 import { check_oj_verify_version, check_py_version } from "./checker";
 import { minify_code } from "./minify";
 import { KnownError, UnknownError } from "./error";
@@ -27,13 +27,27 @@ async function bundle_cxx_code(target_file: string) {
     return config_erase_line_directives ? erase_line_directives(stdout) : config_hide_path ? hide_filepath(stdout) : stdout;
 }
 
-async function bundle_py_code(target_file: string) {
+async function bundle_py_code_rec(target_file: string, bundled: Set<string>) {
     const code = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(target_file)));
     const result = await replace_async(code, /from\s+(.+)\s+import\s+[\s\S]+\s+#\s+!oj-ext\s+import\s+(.+)/gm, async (match: string, name: string, ipath: string) => {
         ipath = expand_variables(ipath);
-        return `# begin import ${name}\n` + new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(ipath))).trim() + `\n# end import ${name}`;
+        const npath = path.normalize(path.isAbsolute(ipath) ? ipath : vscode.Uri.joinPath(vscode.Uri.file(path.dirname(target_file)), ipath).fsPath);
+        console.log(npath);
+        if (bundled.has(npath)) {
+            return "";
+        }
+        bundled.add(npath);
+        const sub = await bundle_py_code_rec(npath, bundled);
+        return `# begin import ${name}\n` + sub.trim() + `\n# end import ${name}`;
     });
     return result;
+}
+
+async function bundle_py_code(target_file: string) {
+    const bundled = new Set<string>();
+    const tpath = normalize(target_file, "");
+    bundled.add(tpath);
+    return bundle_py_code_rec(tpath, bundled);
 }
 
 export async function bundle_code(target_file: string) {

@@ -97,6 +97,10 @@ export async function file_exists(uri: vscode.Uri) {
     }
 }
 
+export function normalize(path_str: string, base: string) {
+    return path.normalize(path.isAbsolute(path_str) ? path_str : vscode.Uri.joinPath(vscode.Uri.file(base), path_str).fsPath);
+}
+
 export function get_config_checking<type>(name: string) {
     const result = vscode.workspace.getConfiguration("oj-ext").get<type>(name);
     if (result === undefined) {
@@ -185,12 +189,17 @@ export function get_language(ext: string) {
         ".cxx": "c++",
         ".cc": "c++",
         ".C": "c++",
+        ".hpp": "c++",
+        ".hxx": "c++",
+        ".hh": "c++",
+        ".H": "c++",
         ".py": "python",
         ".awk": "awk",
         ".sh": "bash",
         ".bf": "brainfuck",
         ".cs": "c#",
         ".c": "c",
+        ".h": "c",
         ".ceylon": "ceylon",
         ".clj": "clojure",
         ".lisp": "common lisp",

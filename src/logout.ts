@@ -20,11 +20,11 @@ export const logout_command = vscode.commands.registerCommand("oj-ext.logout", a
         await check_py_version();
         await check_oj_version();
 
-        const selection = await vscode.window.showInformationMessage("logout: This command signs you out of the all services. Are you sure?", "OK", "cancel");
+        const selection = await vscode.window.showInformationMessage("oj-ext: This command signs you out of the all services. Are you sure?", "OK", "cancel");
         if (selection !== "OK") {
             return;
         }
         await remove_cookie();
-        vscode.window.showInformationMessage("logout: Signed out successfully.");
+        vscode.window.showInformationMessage("oj-ext: Signed out successfully.");
     });
 });

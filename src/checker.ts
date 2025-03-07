@@ -120,7 +120,6 @@ export async function check_oj_verify_version(force = false) {
         ?.slice(1)
         .map(Number);
     if (oj_verify_version.length !== version?.length) {
-        console.log(stdout.replace(/.*Version: (\d+)\.(\d+)\.(\d+).*/, "$1 $2 $3"));
         throw new KnownError("Failed to extract a version of online-judge-verify-helper.");
     }
     if (!satisfy_version(oj_verify_version, version)) {

@@ -7,7 +7,7 @@ export async function login_service(service: number, use_selenium: boolean) {
     const url = service_url[service];
     const { error, stdout, stderr } = await exec_async(`oj login --check ${url}`, true);
     if (!error) {
-        vscode.window.showInformationMessage("login: You have already signed in.");
+        vscode.window.showInformationMessage("oj-ext: You have already signed in.");
         return;
     }
     if (use_selenium) {
@@ -33,7 +33,7 @@ export async function login_service(service: number, use_selenium: boolean) {
                         return;
                     }
                     resolve(null);
-                    vscode.window.showInformationMessage("login: Signed in successfully.");
+                    vscode.window.showInformationMessage("oj-ext: Signed in successfully.");
                 });
             }
         );
@@ -60,7 +60,7 @@ export async function login_service(service: number, use_selenium: boolean) {
                 throw new UnknownError("Something went wrong.");
             }
         }
-        vscode.window.showInformationMessage("login: Signed in successfully.");
+        vscode.window.showInformationMessage("oj-ext: Signed in successfully.");
     }
 }
 
