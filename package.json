@@ -4,7 +4,8 @@
     "description": "VSCode extension for online-judge-tools",
     "publisher": "Rac",
     "repository": "https://github.com/Rac75116/online-judge-extension",
-    "version": "0.0.3",
+    "version": "0.0.4",
+    "icon": "./oj-ext.png",
     "engines": {
         "vscode": "^1.87.0"
     },
