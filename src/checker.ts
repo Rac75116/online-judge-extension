@@ -5,6 +5,7 @@ const py_version = [3, 8];
 const oj_version = [12, 0, 0];
 const oj_api_version = [10, 10, 1];
 const oj_verify_version = [5, 6, 0];
+const py_minifier_version = [2, 11, 0];
 
 function satisfy_version(requested_version: number[], current_version: number[]) {
     const length = requested_version.length;
@@ -142,4 +143,29 @@ export async function has_selenium(force = false) {
     }
     checked_has_selenium = true;
     return true;
+}
+
+let checked_py_minifier_version = false;
+export async function check_py_minifier_version(force = false) {
+    if (force) {
+        checked_py_minifier_version = false;
+    }
+    if (checked_py_minifier_version) {
+        return;
+    }
+    const { error, stdout, stderr } = await exec_async("pip3 show python-minifier", true);
+    if (error) {
+        throw new EnvironmentError("python-minifier is not installed.");
+    }
+    const version = stdout
+        .match(/Version: (\d+)\.(\d+)\.(\d+)/)
+        ?.slice(1)
+        .map(Number);
+    if (py_minifier_version.length !== version?.length) {
+        throw new KnownError("Failed to extract a version of python-minifier.");
+    }
+    if (!satisfy_version(py_minifier_version, version)) {
+        throw new EnvironmentError(`oj-ext requires python-minifier ${py_minifier_version[0]}.${py_minifier_version[1]}.${py_minifier_version[2]} or higher.`);
+    }
+    checked_py_minifier_version = true;
 }

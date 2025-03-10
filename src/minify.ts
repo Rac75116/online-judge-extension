@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as os from "node:os";
 import { exec_async, get_language, random_id } from "./global";
+import { check_py_minifier_version } from "./checker";
 
 const clang_format = `---
 BasedOnStyle: LLVM
@@ -124,6 +125,7 @@ BraceWrapping:
 `;
 
 export async function minify_code(source_code: string, ext: string) {
+    await check_py_minifier_version();
     const working_dir = vscode.Uri.joinPath(vscode.Uri.file(os.homedir()), `./oj-ext/minify/${random_id(32)}`);
     await vscode.workspace.fs.createDirectory(working_dir);
     const uri = vscode.Uri.joinPath(working_dir, `minified${ext}`);
