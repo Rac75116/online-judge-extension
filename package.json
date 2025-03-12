@@ -4,7 +4,7 @@
     "description": "VSCode extension for online-judge-tools",
     "publisher": "Rac",
     "repository": "https://github.com/Rac75116/online-judge-extension",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "icon": "oj-ext.png",
     "engines": {
         "vscode": "^1.87.0"
@@ -22,6 +22,10 @@
             {
                 "command": "oj-ext.setup",
                 "title": "Oj-ext: Install necessary tools"
+            },
+            {
+                "command": "oj-ext.envBuilding",
+                "title": "Oj-ext: Quickly build an environment for C++/Python"
             },
             {
                 "command": "oj-ext.createdir",

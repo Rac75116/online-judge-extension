@@ -7,6 +7,7 @@ import { submit_command } from "./submit";
 import { createdir_command } from "./createdir";
 import { addproblem_command } from "./addproblem";
 import { update_command } from "./update";
+import { envBuilding_command } from "./envBuilding";
 
 export async function activate(context: vscode.ExtensionContext) {
     console.log('"online-judge-extension" is now active!');
@@ -19,6 +20,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(createdir_command);
     context.subscriptions.push(addproblem_command);
     context.subscriptions.push(update_command);
+    context.subscriptions.push(envBuilding_command);
 }
 
 export function deactivate() {}
