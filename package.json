@@ -206,7 +206,8 @@
         "pretest": "npm run compile-tests && npm run compile && npm run lint",
         "lint": "eslint src --ext ts",
         "test": "vscode-test",
-        "build": "vsce package"
+        "build": "vsce package",
+        "build-pre": "vsce package --pre-release"
     },
     "devDependencies": {
         "@types/mocha": "^10.0.6",
